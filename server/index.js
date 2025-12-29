@@ -1,0 +1,789 @@
+const express = require('express');
+const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Configure Multer for employee photos
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/employees/');
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'employee-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        const filetypes = /jpeg|jpg|png|webp/;
+        const mimetype = filetypes.test(file.mimetype);
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+        if (mimetype && extname) {
+            return cb(null, true);
+        }
+        cb(new Error("Only images (jpeg, jpg, png, webp) are allowed"));
+    }
+});
+
+// Configure Multer for documents
+const docStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/documents/');
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'doc-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const uploadDoc = multer({
+    storage: docStorage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+        // Accept common document types + images
+        const filetypes = /pdf|doc|docx|xls|xlsx|txt|jpeg|jpg|png|webp/;
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+
+        // Mime check is looser for loose matching or just rely on extname for simplicity in internal tool
+        if (extname) {
+            return cb(null, true);
+        }
+        cb(new Error("FileType not allowed"));
+    }
+});
+
+// Request logging middleware
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    if (['POST', 'PUT'].includes(req.method)) {
+        console.log('Body:', JSON.stringify(req.body));
+    }
+    next();
+});
+
+// Database Setup
+const sequelize = require('./database');
+
+// Models
+const Employee = require('./models/Employee');
+const Department = require('./models/Department');
+const CostCenter = require('./models/CostCenter');
+const Document = require('./models/Document');
+const Building = require('./models/Building');
+const Apartment = require('./models/Apartment');
+const Room = require('./models/Room');
+const LoanHistory = require('./models/LoanHistory');
+
+// Define Associations
+Building.hasMany(Apartment, { as: 'apartments', foreignKey: 'buildingId', onDelete: 'CASCADE' });
+Apartment.belongsTo(Building, { foreignKey: 'buildingId' });
+
+Apartment.hasMany(Room, { as: 'rooms', foreignKey: 'apartmentId', onDelete: 'CASCADE' });
+Room.belongsTo(Apartment, { foreignKey: 'apartmentId' });
+
+Room.belongsTo(Employee, { as: 'permanentResident', foreignKey: 'permanentResidentId' });
+Room.belongsTo(Employee, { as: 'temporaryResident', foreignKey: 'temporaryResidentId' });
+
+Employee.hasOne(Room, { as: 'permanentRoom', foreignKey: 'permanentResidentId' });
+Employee.hasOne(Room, { as: 'temporaryRoom', foreignKey: 'temporaryResidentId' });
+
+Employee.hasMany(LoanHistory, { as: 'loanHistory', foreignKey: 'employeeId', onDelete: 'CASCADE' });
+LoanHistory.belongsTo(Employee, { foreignKey: 'employeeId' });
+
+Employee.hasMany(Document, { as: 'documents', foreignKey: 'employeeId', onDelete: 'CASCADE' });
+Document.belongsTo(Employee, { foreignKey: 'employeeId' });
+
+// Health check for diagnostics
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', database: !!sequelize });
+});
+
+// Photo upload endpoint
+app.post('/api/upload-photo', upload.single('photo'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+    res.json({
+        url: `/uploads/employees/${req.file.filename}`,
+        filename: req.file.filename
+    });
+});
+
+// --- Departments ---
+app.get('/api/departments', async (req, res) => {
+    try {
+        const departments = await Department.findAll();
+        res.json(departments);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/departments', async (req, res) => {
+    try {
+        const department = await Department.create(req.body);
+        res.status(201).json(department);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+app.delete('/api/departments/:id', async (req, res) => {
+    try {
+        const result = await Department.destroy({ where: { id: req.params.id } });
+        if (result) res.status(204).send();
+        else res.status(404).json({ error: 'Department not found' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// --- Cost Centers ---
+app.get('/api/cost-centers', async (req, res) => {
+    try {
+        const costCenters = await CostCenter.findAll();
+        res.json(costCenters);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/cost-centers', async (req, res) => {
+    try {
+        const costCenter = await CostCenter.create(req.body);
+        res.status(201).json(costCenter);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+app.delete('/api/cost-centers/:id', async (req, res) => {
+    try {
+        const result = await CostCenter.destroy({ where: { id: req.params.id } });
+        if (result) res.status(204).send();
+        else res.status(404).json({ error: 'Cost Center not found' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+// --- Loan History ---
+app.get('/api/employees/:id/loan-history', async (req, res) => {
+    try {
+        const history = await LoanHistory.findAll({
+            where: { employeeId: req.params.id },
+            order: [['startDate', 'DESC']]
+        });
+        res.json(history);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/employees/:id/loan-history', async (req, res) => {
+    try {
+        const history = await LoanHistory.create({
+            employeeId: req.params.id,
+            ...req.body
+        });
+        res.status(201).json(history);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+app.delete('/api/loan-history/:id', async (req, res) => {
+    try {
+        const result = await LoanHistory.destroy({ where: { id: req.params.id } });
+        if (result) res.status(204).send();
+        else res.status(404).json({ error: 'Record not found' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// --- Documents ---
+app.post('/api/employees/:id/documents', uploadDoc.single('document'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+        const document = await Document.create({
+            employeeId: req.params.id,
+            filename: req.file.filename,
+            originalName: req.file.originalname,
+            mimeType: req.file.mimetype,
+            size: req.file.size
+        });
+        res.status(201).json(document);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+app.get('/api/employees/:id/documents', async (req, res) => {
+    try {
+        const documents = await Document.findAll({
+            where: { employeeId: req.params.id },
+            order: [['createdAt', 'DESC']]
+        });
+        res.json(documents);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/documents/:id', async (req, res) => {
+    try {
+        const document = await Document.findByPk(req.params.id);
+        if (!document) return res.status(404).json({ error: 'Document not found' });
+
+        // Remove from disk
+        const filePath = path.join(__dirname, 'uploads/documents', document.filename);
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        await document.destroy();
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// --- Dashboard ---
+app.get('/api/dashboard/expiring-contracts', async (req, res) => {
+    try {
+        const { Op } = require('sequelize');
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+        const now = new Date();
+
+        const expiringEmployees = await Employee.findAll({
+            where: {
+                contractEndDate: {
+                    [Op.and]: {
+                        [Op.ne]: null,
+                        [Op.lt]: thirtyDaysFromNow
+                    }
+                },
+                isActive: true
+            }
+        });
+        res.json(expiringEmployees);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/dashboard/stay-alerts', async (req, res) => {
+    try {
+        const { Op } = require('sequelize');
+
+        const employees = await Employee.findAll({
+            where: {
+                arrivalDate: {
+                    [Op.ne]: null
+                },
+                isActive: true
+            }
+        });
+
+        const alertList = employees.filter(emp => {
+            const arrival = new Date(emp.arrivalDate);
+            const fourMonthsMark = new Date(arrival);
+            fourMonthsMark.setMonth(fourMonthsMark.getMonth() + 4);
+
+            const alertStartDate = new Date(fourMonthsMark);
+            alertStartDate.setDate(alertStartDate.getDate() - 10);
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            return today >= alertStartDate;
+        }).map(emp => {
+            const arrival = new Date(emp.arrivalDate);
+            const fourMonthsMark = new Date(arrival);
+            fourMonthsMark.setMonth(fourMonthsMark.getMonth() + 4);
+
+            return {
+                ...emp.toJSON(),
+                fourMonthsDate: fourMonthsMark.toISOString().split('T')[0]
+            };
+        });
+
+        res.json(alertList);
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/dashboard/vacation-alerts', async (req, res) => {
+    try {
+        const { Op } = require('sequelize');
+
+        const employees = await Employee.findAll({
+            where: {
+                vacationReturnDate: {
+                    [Op.ne]: null
+                },
+                isActive: true
+            }
+        });
+
+        const alertList = employees.filter(emp => {
+            const returnDate = new Date(emp.vacationReturnDate);
+            const alertStartDate = new Date(returnDate);
+            alertStartDate.setDate(alertStartDate.getDate() - 10);
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const returnDateMs = returnDate.getTime();
+            const todayMs = today.getTime();
+            const alertStartMs = alertStartDate.getTime();
+
+            return todayMs >= alertStartMs && todayMs < returnDateMs;
+        });
+
+        res.json(alertList);
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+// Get residence statistics for dashboard
+app.get('/api/dashboard/residence-stats', async (req, res) => {
+    try {
+        const buildings = await Building.findAll({
+            include: [{
+                model: Apartment,
+                as: 'apartments',
+                include: [{
+                    model: Room,
+                    as: 'rooms'
+                }]
+            }]
+        });
+
+        let totalRooms = 0;
+        let occupiedRooms = 0;
+
+        buildings.forEach(building => {
+            building.apartments?.forEach(apt => {
+                totalRooms += apt.rooms?.length || 0;
+                occupiedRooms += apt.rooms?.filter(r => r.permanentResidentId || r.temporaryResidentId).length || 0;
+            });
+        });
+
+        res.json({
+            totalBuildings: buildings.length,
+            totalRooms,
+            occupiedRooms,
+            occupancyRate: totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// --- Settings & Administration (الإعدادات) ---
+
+// Database Backup
+app.get('/api/settings/backup', async (req, res) => {
+    try {
+        const backupDir = path.join(__dirname, 'backups');
+        if (!fs.existsSync(backupDir)) {
+            fs.mkdirSync(backupDir);
+        }
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const dbPath = path.join(__dirname, 'database.sqlite');
+        const backupPath = path.join(backupDir, `backup-${timestamp}.sqlite`);
+
+        if (!fs.existsSync(dbPath)) {
+            return res.status(404).json({ error: 'Database file not found' });
+        }
+
+        fs.copyFileSync(dbPath, backupPath);
+        res.json({
+            message: 'Backup successful',
+            filename: path.basename(backupPath),
+            path: backupPath
+        });
+    } catch (error) {
+        console.error('Backup error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Export Employees to CSV
+app.get('/api/settings/export-employees', async (req, res) => {
+    try {
+        const employees = await Employee.findAll();
+
+        const headers = [
+            'ID', 'الاسم الأول', 'اسم العائلة', 'الرقم الثابت', 'البريد الإلكتروني',
+            'الوظيفة', 'القسم', 'دور العمل', 'الراتب',
+            'تاريخ التعيين', 'بداية العقد', 'نهاية العقد',
+            'تاريخ الوصول', 'تاريخ العودة من الأجازة'
+        ];
+
+        const rows = employees.map(emp => [
+            emp.id,
+            emp.firstName,
+            emp.lastName,
+            emp.fixedNumber,
+            emp.email || '',
+            emp.position,
+            emp.department,
+            emp.jobRole,
+            emp.salary,
+            emp.dateHired,
+            emp.contractStartDate,
+            emp.contractEndDate,
+            emp.arrivalDate,
+            emp.vacationReturnDate || ''
+        ]);
+
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ].join('\n');
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `employees-export-${timestamp}.csv`;
+
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+        // Add UTF-8 BOM for Excel visibility
+        res.send('\uFEFF' + csvContent);
+    } catch (error) {
+        console.error('Export error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get Database Info
+app.get('/api/settings/db-info', async (req, res) => {
+    try {
+        const dbPath = path.join(__dirname, 'database.sqlite');
+        if (!fs.existsSync(dbPath)) {
+            return res.status(404).json({ error: 'Database file not found' });
+        }
+
+        const stats = fs.statSync(dbPath);
+        res.json({
+            size: (stats.size / 1024 / 1024).toFixed(2), // MB
+            lastModified: stats.mtime,
+            path: dbPath
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// --- Residence Management (الاستراحات) ---
+
+// Get all buildings with summary info
+app.get('/api/residences/buildings', async (req, res) => {
+    try {
+        const buildings = await Building.findAll({
+            include: [{
+                model: Apartment,
+                as: 'apartments',
+                include: [{
+                    model: Room,
+                    as: 'rooms'
+                }]
+            }]
+        });
+        res.json(buildings);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Create building
+app.post('/api/residences/buildings', async (req, res) => {
+    try {
+        const building = await Building.create(req.body);
+        res.status(201).json(building);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Get building details (Apartments and Rooms)
+app.get('/api/residences/buildings/:id', async (req, res) => {
+    try {
+        const building = await Building.findByPk(req.params.id, {
+            include: [{
+                model: Apartment,
+                as: 'apartments',
+                include: [{
+                    model: Room,
+                    as: 'rooms',
+                    include: [
+                        { model: Employee, as: 'permanentResident' },
+                        { model: Employee, as: 'temporaryResident' }
+                    ]
+                }]
+            }]
+        });
+        if (building) res.json(building);
+        else res.status(404).json({ error: 'Building not found' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Create apartment
+app.post('/api/residences/apartments', async (req, res) => {
+    try {
+        const apartment = await Apartment.create(req.body);
+        res.status(201).json(apartment);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Update apartment
+app.put('/api/residences/apartments/:id', async (req, res) => {
+    try {
+        const apartment = await Apartment.findByPk(req.params.id);
+        if (apartment) {
+            await apartment.update(req.body);
+            res.json(apartment);
+        } else {
+            res.status(404).json({ error: 'Apartment not found' });
+        }
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Delete apartment
+app.delete('/api/residences/apartments/:id', async (req, res) => {
+    try {
+        const count = await Apartment.destroy({ where: { id: req.params.id } });
+        if (count) res.status(204).send();
+        else res.status(404).json({ error: 'Apartment not found' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Create room
+app.post('/api/residences/rooms', async (req, res) => {
+    try {
+        const room = await Room.create(req.body);
+        res.status(201).json(room);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Update room (assignment or number)
+app.put('/api/residences/rooms/:id', async (req, res) => {
+    try {
+        const room = await Room.findByPk(req.params.id);
+        if (room) {
+            await room.update(req.body);
+            res.json(room);
+        } else {
+            res.status(404).json({ error: 'Room not found' });
+        }
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Delete room
+app.delete('/api/residences/rooms/:id', async (req, res) => {
+    try {
+        const count = await Room.destroy({ where: { id: req.params.id } });
+        if (count) res.status(204).send();
+        else res.status(404).json({ error: 'Room not found' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete building
+app.delete('/api/residences/buildings/:id', async (req, res) => {
+    try {
+        const count = await Building.destroy({ where: { id: req.params.id } });
+        if (count) res.status(204).send();
+        else res.status(404).json({ error: 'Building not found' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// --- Employees ---
+// Get all employees
+app.get('/api/employees', async (req, res) => {
+    try {
+        const employees = await Employee.findAll({
+            include: [
+                { model: Room, as: 'permanentRoom' },
+                { model: Room, as: 'temporaryRoom' }
+            ]
+        });
+        res.json(employees);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get employee by ID
+app.get('/api/employees/:id', async (req, res) => {
+    try {
+        const employee = await Employee.findByPk(req.params.id, {
+            include: [
+                {
+                    model: Room,
+                    as: 'permanentRoom',
+                    include: [{ model: Apartment, include: [Building] }]
+                },
+                {
+                    model: Room,
+                    as: 'temporaryRoom',
+                    include: [{ model: Apartment, include: [Building] }]
+                }
+            ]
+        });
+        if (employee) {
+            res.json(employee);
+        } else {
+            res.status(404).json({ error: 'Employee not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Create employee
+app.post('/api/employees', async (req, res) => {
+    try {
+        const employeeData = { ...req.body };
+        ['dateHired', 'contractStartDate', 'contractEndDate', 'arrivalDate', 'vacationReturnDate'].forEach(key => {
+            if (employeeData[key] === '') employeeData[key] = null;
+        });
+
+        if (employeeData.contractStartDate) {
+            const startDate = new Date(employeeData.contractStartDate);
+            if (!isNaN(startDate.getTime())) {
+                const endDate = new Date(startDate);
+                endDate.setFullYear(endDate.getFullYear() + 2);
+                employeeData.contractEndDate = endDate.toISOString().split('T')[0];
+            }
+        }
+        const employee = await Employee.create(employeeData);
+        res.status(201).json(employee);
+    } catch (error) {
+        console.error('Create employee error:', error);
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Update employee
+app.put('/api/employees/:id', async (req, res) => {
+    try {
+        const employee = await Employee.findByPk(req.params.id);
+        if (employee) {
+            const { id, createdAt, updatedAt, ...updateData } = req.body;
+
+            // Convert empty strings to null for date fields
+            ['dateHired', 'contractStartDate', 'contractEndDate', 'arrivalDate', 'vacationReturnDate'].forEach(key => {
+                if (updateData[key] === '') updateData[key] = null;
+            });
+
+            if (updateData.contractStartDate) {
+                const startDate = new Date(updateData.contractStartDate);
+                if (!isNaN(startDate.getTime())) {
+                    const endDate = new Date(startDate);
+                    endDate.setFullYear(endDate.getFullYear() + 2);
+                    updateData.contractEndDate = endDate.toISOString().split('T')[0];
+                }
+            }
+            // Force strict boolean for isActive if present
+            if (updateData.isActive !== undefined) {
+                updateData.isActive = updateData.isActive === true || updateData.isActive === 'true' || updateData.isActive === 1 || updateData.isActive === '1';
+            }
+
+            // If becoming inactive, clear Cost Center and Residence assignments
+            if (updateData.isActive === false) {
+                updateData.costCenter = null;
+
+                // Remove from Rooms (both permanent and temporary)
+                // We need to handle this asynchronously but we want to ensure it happens
+                try {
+                    await Room.update(
+                        { permanentResidentId: null },
+                        { where: { permanentResidentId: req.params.id } }
+                    );
+                    await Room.update(
+                        { temporaryResidentId: null },
+                        { where: { temporaryResidentId: req.params.id } }
+                    );
+                } catch (roomError) {
+                    console.error('Error removing inactive employee from rooms:', roomError);
+                }
+            }
+
+            await employee.update(updateData);
+            res.json(employee);
+        } else {
+            res.status(404).json({ error: 'Employee not found' });
+        }
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Delete employee
+app.delete('/api/employees/:id', async (req, res) => {
+    try {
+        const employee = await Employee.findByPk(req.params.id);
+        if (employee) {
+            await employee.destroy();
+            res.status(204).send();
+        } else {
+            res.status(404).json({ error: 'Employee not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Start server
+console.log('Syncing database...');
+sequelize.sync()
+    .then(() => {
+        console.log('Database sync successful');
+        app.listen(PORT, '127.0.0.1', () => {
+            console.log(`Server is running on http://127.0.0.1:${PORT}`);
+        });
+    })
+    .catch(err => {
+        console.error('Database sync failed:', err);
+        process.exit(1);
+    });

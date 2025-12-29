@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+venv/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Production
+dist/
+dist-electron/
+build/
+
+# Misc
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+backups/
+
+# Server uploads
+server/uploads/
+
+# Quick temporary files
+temp_fonts/
+debug_logo.py
+process_logo.py
