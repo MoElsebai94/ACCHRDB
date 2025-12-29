@@ -14,6 +14,15 @@ app.use(express.json());
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Ensure upload directories exist
+const uploadDirs = ['uploads', 'uploads/employees', 'uploads/documents', 'backups'];
+uploadDirs.forEach(dir => {
+    const dirPath = path.join(__dirname, dir);
+    if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+    }
+});
+
 // Configure Multer for employee photos
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -66,14 +75,7 @@ const uploadDoc = multer({
     }
 });
 
-// Request logging middleware
-app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    if (['POST', 'PUT'].includes(req.method)) {
-        console.log('Body:', JSON.stringify(req.body));
-    }
-    next();
-});
+
 
 // Database Setup
 const sequelize = require('./database');
