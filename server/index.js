@@ -406,30 +406,106 @@ app.get('/api/dashboard/residence-stats', async (req, res) => {
 // --- Settings & Administration (الإعدادات) ---
 
 // Database Backup
+// Configure Multer for DB Restore
+const restoreStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, 'restore_temp.sqlite');
+    }
+});
+const uploadRestore = multer({ storage: restoreStorage });
+
+// Database Backup (Download)
 app.get('/api/settings/backup', async (req, res) => {
     try {
-        const backupDir = path.join(__dirname, 'backups');
-        if (!fs.existsSync(backupDir)) {
-            fs.mkdirSync(backupDir);
-        }
-
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const dbPath = path.join(__dirname, 'database.sqlite');
-        const backupPath = path.join(backupDir, `backup-${timestamp}.sqlite`);
-
         if (!fs.existsSync(dbPath)) {
             return res.status(404).json({ error: 'Database file not found' });
         }
 
-        fs.copyFileSync(dbPath, backupPath);
-        res.json({
-            message: 'Backup successful',
-            filename: path.basename(backupPath),
-            path: backupPath
-        });
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `backup-gomaadb-${timestamp}.sqlite`;
+
+        res.download(dbPath, filename);
     } catch (error) {
         console.error('Backup error:', error);
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Database Restore
+app.post('/api/settings/restore', uploadRestore.single('database'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+        const tempPath = req.file.path;
+        const dbPath = path.join(__dirname, 'database.sqlite');
+        const backupPath = path.join(__dirname, 'database.sqlite.bak');
+
+        // 1. Validate File Size
+        const stats = fs.statSync(tempPath);
+        if (stats.size === 0) {
+            fs.unlinkSync(tempPath);
+            return res.status(400).json({ error: 'ملف النسخة الاحتياطية فارغ' });
+        }
+
+        // 2. Validate SQLite Magic Header
+        const fd = fs.openSync(tempPath, 'r');
+        const buffer = Buffer.alloc(16);
+        fs.readSync(fd, buffer, 0, 16, 0);
+        fs.closeSync(fd);
+        const header = buffer.toString('utf-8');
+
+        if (!header.startsWith('SQLite format 3')) {
+            fs.unlinkSync(tempPath);
+            return res.status(400).json({ error: 'الملف المرفق ليس قاعدة بيانات صالحة (Invalid SQLite file)' });
+        }
+
+        // Close connection to release file lock
+        try {
+            await sequelize.close();
+            console.log('Database connection closed for restore.');
+        } catch (e) {
+            console.warn('Could not close DB connection (might be already closed):', e);
+        }
+
+        // Wait brief moment for locks to release
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // 3. Safety Backup of CURRENT Data
+        if (fs.existsSync(dbPath)) {
+            try {
+                fs.copyFileSync(dbPath, backupPath);
+                console.log('Created safety backup at:', backupPath);
+            } catch (err) {
+                console.error('Failed to create safety backup:', err);
+                // Decide if we should proceed? Yes, but warn log.
+            }
+        }
+
+        // 4. Overwrite Database
+        fs.copyFileSync(tempPath, dbPath);
+        fs.unlinkSync(tempPath); // Clean up temp
+
+        console.log('Database restored from backup. Restarting server...');
+
+        res.json({
+            message: 'تم استعادة قاعدة البيانات بنجاح. سيتم إعادة تشغيل الخادم...',
+            restartRequired: true
+        });
+
+        // Trigger safe restart after response sends
+        setTimeout(() => {
+            process.exit(99); // Exit code 99 triggers restart in electron main.js
+        }, 1000);
+
+    } catch (error) {
+        console.error('Restore error:', error);
+        // Try to clean up temp if exists
+        try { if (req.file) fs.unlinkSync(req.file.path); } catch (e) { }
+        res.status(500).json({ error: 'Restore failed: ' + error.message });
     }
 });
 
@@ -440,9 +516,15 @@ app.get('/api/settings/export-employees', async (req, res) => {
 
         const headers = [
             'ID', 'الاسم الأول', 'اسم العائلة', 'الرقم الثابت', 'البريد الإلكتروني',
-            'الوظيفة', 'القسم', 'دور العمل', 'الراتب',
+            'الوظيفة', 'القسم', 'مركز التكلفة', 'دور العمل', 'الراتب',
             'تاريخ التعيين', 'بداية العقد', 'نهاية العقد',
-            'تاريخ الوصول', 'تاريخ العودة من الأجازة'
+            'تاريخ الوصول', 'تاريخ العودة من الأجازة',
+            'المؤهل', 'تاريخ المؤهل',
+            'الحالة الاجتماعية',
+            'الدرجة', 'تاريخ الدرجة',
+            'تاريخ المسمى الوظيفي الحالي',
+            'بداية السلفة', 'نهاية السلفة',
+            'الحالة (نشط)'
         ];
 
         const rows = employees.map(emp => [
@@ -453,13 +535,23 @@ app.get('/api/settings/export-employees', async (req, res) => {
             emp.email || '',
             emp.position,
             emp.department,
+            emp.costCenter || '',
             emp.jobRole,
             emp.salary,
             emp.dateHired,
             emp.contractStartDate,
             emp.contractEndDate,
             emp.arrivalDate,
-            emp.vacationReturnDate || ''
+            emp.vacationReturnDate || '',
+            emp.qualification || '',
+            emp.qualificationDate || '',
+            emp.maritalStatus || '',
+            emp.grade || '',
+            emp.gradeDate || '',
+            emp.currentJobTitleDate || '',
+            emp.loanStartDate || '',
+            emp.loanEndDate || '',
+            emp.isActive ? 'نشط' : 'غير نشط'
         ]);
 
         const csvContent = [
@@ -776,7 +868,7 @@ app.delete('/api/employees/:id', async (req, res) => {
 
 // Start server
 console.log('Syncing database...');
-sequelize.sync()
+sequelize.sync({ alter: true })
     .then(() => {
         console.log('Database sync successful');
         app.listen(PORT, '127.0.0.1', () => {

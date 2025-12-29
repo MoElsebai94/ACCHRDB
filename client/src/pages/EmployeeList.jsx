@@ -203,7 +203,6 @@ export default function EmployeeList() {
     };
 
     const handleExportEmployeeReport = async () => {
-        console.log('--- EXPORT START (MANUAL MODE) ---');
         await generatePDF();
     };
 

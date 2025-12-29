@@ -7,6 +7,15 @@ let mainWindow;
 let serverProcess;
 
 // Basic logging setup (safe to run at top level)
+// Configure Portable Data Path (Must be done before accessing userData)
+if (process.env.PORTABLE_EXECUTABLE_DIR) {
+    // Running as generic Portable App (e.g. from Flash Drive)
+    app.setPath('userData', path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'gomaadb_data'));
+} else if (process.platform === 'win32' && app.isPackaged) {
+    // Running as installed/unpacked on Windows - keep data with exe
+    app.setPath('userData', path.join(path.dirname(app.getPath('exe')), 'gomaadb_data'));
+}
+
 const userDataPath = app.getPath('userData');
 const logPath = path.join(userDataPath, 'main-process.log');
 let logStream;
@@ -73,12 +82,25 @@ function createWindow() {
     });
 
     // Handle Downloads explicitly
+    // Handle Downloads explicitly
     mainWindow.webContents.session.on('will-download', (event, item, webContents) => {
-        // Set the save path, forcing a save dialog so the user sees something happening
+        const filename = item.getFilename().toLowerCase();
+        let filters = [];
+
+        if (filename.endsWith('.pdf')) {
+            filters = [{ name: 'PDF Files', extensions: ['pdf'] }];
+        } else if (filename.endsWith('.sqlite')) {
+            filters = [{ name: 'Database Files', extensions: ['sqlite'] }];
+        } else if (filename.endsWith('.csv')) {
+            filters = [{ name: 'CSV Files', extensions: ['csv'] }];
+        } else {
+            filters = [{ name: 'All Files', extensions: ['*'] }];
+        }
+
         item.setSaveDialogOptions({
-            title: 'Save PDF',
+            title: `Save ${filename}`,
             defaultPath: item.getFilename(),
-            filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+            filters: filters
         });
 
         item.on('updated', (event, state) => {
@@ -143,7 +165,10 @@ function startServer() {
 
         serverProcess.on('exit', (code, signal) => {
             log(`SERVER PROCESS EXIT: code=${code}, signal=${signal}`);
-            if (code !== 0 && code !== null) {
+            if (code === 99) {
+                log('Server requested restart (Restore operation). Restarting...');
+                startServer(); // Restart server
+            } else if (code !== 0 && code !== null) {
                 dialog.showErrorBox('Server Crashed', `Backend server exited with code ${code}. Check logs at: ${logPath}`);
             }
         });
