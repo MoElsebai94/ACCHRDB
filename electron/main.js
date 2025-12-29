@@ -72,6 +72,35 @@ function createWindow() {
         log(`FAILED TO LOAD: ${errorCode} - ${errorDescription}`);
     });
 
+    // Handle Downloads explicitly
+    mainWindow.webContents.session.on('will-download', (event, item, webContents) => {
+        // Set the save path, forcing a save dialog so the user sees something happening
+        item.setSaveDialogOptions({
+            title: 'Save PDF',
+            defaultPath: item.getFilename(),
+            filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+        });
+
+        item.on('updated', (event, state) => {
+            if (state === 'interrupted') {
+                log('Download is interrupted but can be resumed');
+            } else if (state === 'progressing') {
+                if (item.isPaused()) {
+                    log('Download is paused');
+                } else {
+                    log(`Received bytes: ${item.getReceivedBytes()}`);
+                }
+            }
+        });
+        item.once('done', (event, state) => {
+            if (state === 'completed') {
+                log('Download successfully');
+            } else {
+                log(`Download failed: ${state}`);
+            }
+        });
+    });
+
     mainWindow.on('closed', function () {
         mainWindow = null;
     });

@@ -11,12 +11,14 @@ import Residences from './pages/residences/Residences';
 import BuildingDetail from './pages/residences/BuildingDetail';
 import Settings from './pages/Settings';
 import LoadingScreen from './components/LoadingScreen';
+import LandingPage from './components/LandingPage';
 import { API_URL } from './utils/api';
 
 import TopBar from './components/TopBar';
 
 function App() {
   const [isReady, setIsReady] = useState(false);
+  const [showLanding, setShowLanding] = useState(true);
 
   useEffect(() => {
     const checkBackend = async () => {
@@ -40,6 +42,10 @@ function App() {
 
   return (
     <HashRouter>
+      {showLanding && (
+        <LandingPage onComplete={() => setShowLanding(false)} />
+      )}
+
       <div className="dashboard">
         <Sidebar />
         <main className="main-content">
