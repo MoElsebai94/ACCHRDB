@@ -7,17 +7,25 @@ const multer = require('multer');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Define base data directory (use USER_DATA_PATH from Electron if available, else __dirname)
+const DATA_DIR = process.env.USER_DATA_PATH || __dirname;
+// Define database path (use DATABASE_PATH from Electron if available, else fallback)
+const DB_PATH = process.env.DATABASE_PATH || path.join(DATA_DIR, 'database.sqlite');
+
+console.log('Server running with DATA_DIR:', DATA_DIR);
+console.log('Server running with DB_PATH:', DB_PATH);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 
 // Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(DATA_DIR, 'uploads')));
 
 // Ensure upload directories exist
 const uploadDirs = ['uploads', 'uploads/employees', 'uploads/documents', 'backups'];
 uploadDirs.forEach(dir => {
-    const dirPath = path.join(__dirname, dir);
+    const dirPath = path.join(DATA_DIR, dir);
     if (!fs.existsSync(dirPath)) {
         fs.mkdirSync(dirPath, { recursive: true });
     }
@@ -26,7 +34,7 @@ uploadDirs.forEach(dir => {
 // Configure Multer for employee photos
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/employees/');
+        cb(null, path.join(DATA_DIR, 'uploads/employees/'));
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -51,7 +59,7 @@ const upload = multer({
 // Configure Multer for documents
 const docStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/documents/');
+        cb(null, path.join(DATA_DIR, 'uploads/documents/'));
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -253,7 +261,7 @@ app.delete('/api/documents/:id', async (req, res) => {
         if (!document) return res.status(404).json({ error: 'Document not found' });
 
         // Remove from disk
-        const filePath = path.join(__dirname, 'uploads/documents', document.filename);
+        const filePath = path.join(DATA_DIR, 'uploads/documents', document.filename);
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }
@@ -411,7 +419,7 @@ app.get('/api/dashboard/residence-stats', async (req, res) => {
 // Configure Multer for DB Restore
 const restoreStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/');
+        cb(null, path.join(DATA_DIR, 'uploads/'));
     },
     filename: (req, file, cb) => {
         cb(null, 'restore_temp.sqlite');
@@ -422,15 +430,14 @@ const uploadRestore = multer({ storage: restoreStorage });
 // Database Backup (Download)
 app.get('/api/settings/backup', async (req, res) => {
     try {
-        const dbPath = path.join(__dirname, 'database.sqlite');
-        if (!fs.existsSync(dbPath)) {
+        if (!fs.existsSync(DB_PATH)) {
             return res.status(404).json({ error: 'Database file not found' });
         }
 
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `backup-gomaadb-${timestamp}.sqlite`;
 
-        res.download(dbPath, filename);
+        res.download(DB_PATH, filename);
     } catch (error) {
         console.error('Backup error:', error);
         res.status(500).json({ error: error.message });
@@ -443,8 +450,9 @@ app.post('/api/settings/restore', uploadRestore.single('database'), async (req, 
         if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
         const tempPath = req.file.path;
-        const dbPath = path.join(__dirname, 'database.sqlite');
-        const backupPath = path.join(__dirname, 'database.sqlite.bak');
+        // Use defined DB_PATH
+        const dbPath = DB_PATH;
+        const backupPath = DB_PATH + '.bak';
 
         // 1. Validate File Size
         const stats = fs.statSync(tempPath);
@@ -577,16 +585,15 @@ app.get('/api/settings/export-employees', async (req, res) => {
 // Get Database Info
 app.get('/api/settings/db-info', async (req, res) => {
     try {
-        const dbPath = path.join(__dirname, 'database.sqlite');
-        if (!fs.existsSync(dbPath)) {
+        if (!fs.existsSync(DB_PATH)) {
             return res.status(404).json({ error: 'Database file not found' });
         }
 
-        const stats = fs.statSync(dbPath);
+        const stats = fs.statSync(DB_PATH);
         res.json({
             size: (stats.size / 1024 / 1024).toFixed(2), // MB
             lastModified: stats.mtime,
-            path: dbPath
+            path: DB_PATH
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -870,14 +877,30 @@ app.delete('/api/employees/:id', async (req, res) => {
 
 // Start server
 console.log('Syncing database...');
+console.log('Syncing database...');
+const startApp = () => {
+    app.listen(PORT, '127.0.0.1', () => {
+        console.log(`Server is running on http://127.0.0.1:${PORT}`);
+    });
+};
+
 sequelize.sync({ alter: true })
     .then(() => {
-        console.log('Database sync successful');
-        app.listen(PORT, '127.0.0.1', () => {
-            console.log(`Server is running on http://127.0.0.1:${PORT}`);
-        });
+        console.log('Database sync successful (Alter Mode)');
+        startApp();
     })
     .catch(err => {
-        console.error('Database sync failed:', err);
-        process.exit(1);
+        console.error('Database sync (Alter Mode) failed:', err.message);
+        console.log('Falling back to standard sync...');
+
+        // Fallback to standard sync (no schema modification)
+        sequelize.sync()
+            .then(() => {
+                console.log('Database sync successful (Standard Mode)');
+                startApp();
+            })
+            .catch(fatalErr => {
+                console.error('Fatal: Database standard sync failed:', fatalErr);
+                process.exit(1);
+            });
     });

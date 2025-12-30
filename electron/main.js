@@ -150,6 +150,7 @@ function startServer() {
             env: {
                 ...process.env,
                 DATABASE_PATH: dbPath,
+                USER_DATA_PATH: userDataPath,
                 PORT: 3001,
                 ELECTRON_RUN_AS_NODE: '1'
             }
