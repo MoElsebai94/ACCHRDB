@@ -849,6 +849,14 @@ export default function EmployeeProfile() {
                             { label: 'تاريخ نهاية العقد', value: employee.contractEndDate }
                         ],
                         [
+                            { label: 'الدرجة الوظيفية', value: `${employee.grade || '-'} ${employee.gradeDate ? `(${employee.gradeDate})` : ''}` },
+                            { label: 'المؤهل', value: `${employee.qualification || '-'} ${employee.qualificationDate ? `(${employee.qualificationDate})` : ''}` }
+                        ],
+                        [
+                            { label: 'جهة العمل الحالية', value: employee.currentWorkLocation || '-' },
+                            { label: 'الإدارة قبل الإعارة', value: employee.departmentBeforeLoan || '-' }
+                        ],
+                        [
                             { label: 'الراتب الأساسي', value: `$${Number(employee.salary).toLocaleString()}` },
                             {
                                 label: 'الحالة الاجتماعية', value: (() => {
@@ -858,16 +866,8 @@ export default function EmployeeProfile() {
                             }
                         ],
                         [
-                            { label: 'المؤهل', value: `${employee.qualification || '-'} ${employee.qualificationDate ? `(${employee.qualificationDate})` : ''}` },
-                            { label: 'الدرجة الوظيفية', value: `${employee.grade || '-'} ${employee.gradeDate ? `(${employee.gradeDate})` : ''}` }
-                        ],
-                        [
-                            { label: 'جهة العمل الحالية', value: employee.currentWorkLocation || '-' },
-                            { label: 'الإدارة قبل الإعارة', value: employee.departmentBeforeLoan || '-' }
-                        ],
-                        [
-                            { label: 'تقرير الكفاءة', value: employee.efficiencyReport || '-' },
-                            { label: 'الاستراحه', value: employee.permanentRoom?.Apartment?.Building?.name || (employee.temporaryRoom?.Apartment?.Building?.name ? `${employee.temporaryRoom.Apartment.Building.name} (مؤقت)` : '-') }
+                            { label: 'الاستراحه', value: employee.permanentRoom?.Apartment?.Building?.name || (employee.temporaryRoom?.Apartment?.Building?.name ? `${employee.temporaryRoom.Apartment.Building.name} (مؤقت)` : '-') },
+                            { label: 'تقرير الكفاءة', value: employee.efficiencyReport || '-' }
                         ]
                     ].map((row, idx) => (
                         <div key={idx} style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
