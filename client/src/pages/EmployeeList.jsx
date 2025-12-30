@@ -475,8 +475,21 @@ export default function EmployeeList() {
                                             }
                                             // Handle other dynamic columns
                                             let cellContent = emp[col.key];
-                                            if (col.key === 'salary') cellContent = emp.salary ? `$${Number(emp.salary).toLocaleString()}` : '-';
-                                            else if (!cellContent) cellContent = '-';
+
+                                            if (col.key === 'salary') {
+                                                cellContent = emp.salary ? `$${Number(emp.salary).toLocaleString()}` : '-';
+                                            } else if (col.key === 'maritalStatus') {
+                                                const statusMap = {
+                                                    'Single': 'أعزب',
+                                                    'Married': 'متزوج',
+                                                    'MarriedWithDependents': 'متزوج و يعول',
+                                                    'Divorced': 'مطلق',
+                                                    'Widowed': 'أرمل'
+                                                };
+                                                cellContent = statusMap[cellContent] || cellContent || '-';
+                                            } else if (!cellContent) {
+                                                cellContent = '-';
+                                            }
 
                                             return <td key={col.key}>{cellContent}</td>;
                                         })}
@@ -566,6 +579,17 @@ export default function EmployeeList() {
 
                                     if (col.key === 'salary') {
                                         content = `$ ${emp.salary ? Number(emp.salary).toLocaleString() : '0'}`;
+                                    }
+
+                                    if (col.key === 'maritalStatus') {
+                                        const statusMap = {
+                                            'Single': 'أعزب',
+                                            'Married': 'متزوج',
+                                            'MarriedWithDependents': 'متزوج و يعول',
+                                            'Divorced': 'مطلق',
+                                            'Widowed': 'أرمل'
+                                        };
+                                        content = statusMap[content] || content;
                                     }
 
                                     return (
