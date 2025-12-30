@@ -744,8 +744,22 @@ app.get('/api/employees', async (req, res) => {
     try {
         const employees = await Employee.findAll({
             include: [
-                { model: Room, as: 'permanentRoom' },
-                { model: Room, as: 'temporaryRoom' }
+                {
+                    model: Room,
+                    as: 'permanentRoom',
+                    include: [{
+                        model: Apartment,
+                        include: [Building]
+                    }]
+                },
+                {
+                    model: Room,
+                    as: 'temporaryRoom',
+                    include: [{
+                        model: Apartment,
+                        include: [Building]
+                    }]
+                }
             ]
         });
         res.json(employees);

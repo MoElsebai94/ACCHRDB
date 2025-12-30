@@ -22,6 +22,8 @@ export default function EmployeeList() {
     const [selectedPosition, setSelectedPosition] = useState('');
     const [departments, setDepartments] = useState([]);
     const [costCenters, setCostCenters] = useState([]);
+    const [buildings, setBuildings] = useState([]);
+    const [selectedBuilding, setSelectedBuilding] = useState('');
     const [showInactive, setShowInactive] = useState(false);
     const [showColumnMenu, setShowColumnMenu] = useState(false);
     const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', type: 'error' });
@@ -53,7 +55,8 @@ export default function EmployeeList() {
         { key: 'cairoPhone', label: 'التليفون بالقاهره' },
         { key: 'cameroonPhone', label: 'التليفون بالكاميرون' },
         { key: 'currentWorkLocation', label: 'جهه العمل الحاليه' },
-        { key: 'departmentBeforeLoan', label: 'الادارة قبل الاعاره' }
+        { key: 'departmentBeforeLoan', label: 'الادارة قبل الاعاره' },
+        { key: 'residence', label: 'الاستراحه' }
     ];
 
     const [visibleColumns, setVisibleColumns] = useState(() => {
@@ -69,6 +72,7 @@ export default function EmployeeList() {
         fetchEmployees();
         fetchDepartments();
         fetchCostCenters();
+        fetchBuildings();
     }, []);
 
     const filteredEmployees = useMemo(() => {
@@ -77,10 +81,18 @@ export default function EmployeeList() {
             const matchesDept = selectedDept ? emp.department === selectedDept : true;
             const matchesCostCenter = selectedCostCenter ? emp.costCenter === selectedCostCenter : true;
             const matchesPosition = selectedPosition ? emp.jobRole === selectedPosition : true;
+
+            let matchesBuilding = true;
+            if (selectedBuilding) {
+                const permanentBuilding = emp.permanentRoom?.Apartment?.Building?.name;
+                const temporaryBuilding = emp.temporaryRoom?.Apartment?.Building?.name;
+                matchesBuilding = permanentBuilding === selectedBuilding || temporaryBuilding === selectedBuilding;
+            }
+
             const matchesInactive = showInactive ? true : emp.isActive;
-            return matchesSearch && matchesDept && matchesCostCenter && matchesPosition && matchesInactive;
+            return matchesSearch && matchesDept && matchesCostCenter && matchesPosition && matchesBuilding && matchesInactive;
         });
-    }, [employees, searchTerm, selectedDept, selectedCostCenter, selectedPosition, showInactive]);
+    }, [employees, searchTerm, selectedDept, selectedCostCenter, selectedPosition, selectedBuilding, showInactive]);
 
     const toggleColumn = (key) => {
         setVisibleColumns(prev => {
@@ -136,6 +148,18 @@ export default function EmployeeList() {
             }
         } catch (error) {
             console.error('Error fetching cost centers:', error);
+        }
+    };
+
+    const fetchBuildings = async () => {
+        try {
+            const response = await fetch(`${API_URL}/residences/buildings`);
+            if (response.ok) {
+                const data = await response.json();
+                setBuildings(data);
+            }
+        } catch (error) {
+            console.error('Error fetching buildings:', error);
         }
     };
 
@@ -278,12 +302,25 @@ export default function EmployeeList() {
                         icon={Filter}
                     />
                 </div>
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                    <CustomSelect
+                        options={[
+                            { value: '', label: 'كل الاستراحات' },
+                            ...buildings.map(b => ({ value: b.name, label: b.name }))
+                        ]}
+                        value={selectedBuilding}
+                        onChange={setSelectedBuilding}
+                        placeholder="كل الاستراحات"
+                        icon={Filter}
+                    />
+                </div>
                 {(selectedDept || selectedCostCenter || selectedPosition || searchTerm) && (
                     <button
                         onClick={() => {
                             setSelectedDept('');
                             setSelectedCostCenter('');
                             setSelectedPosition('');
+                            setSelectedBuilding('');
                             setSearchTerm('');
                         }}
                         className="btn btn-secondary"
@@ -493,6 +530,14 @@ export default function EmployeeList() {
                                                     'Widowed': 'أرمل'
                                                 };
                                                 cellContent = statusMap[cellContent] || cellContent || '-';
+                                            } else if (col.key === 'residence') {
+                                                if (emp.permanentRoom?.Apartment?.Building?.name) {
+                                                    cellContent = emp.permanentRoom.Apartment.Building.name;
+                                                } else if (emp.temporaryRoom?.Apartment?.Building?.name) {
+                                                    cellContent = `${emp.temporaryRoom.Apartment.Building.name} (مؤقت)`;
+                                                } else {
+                                                    cellContent = '-';
+                                                }
                                             } else if (!cellContent) {
                                                 cellContent = '-';
                                             }
@@ -596,6 +641,16 @@ export default function EmployeeList() {
                                             'Widowed': 'أرمل'
                                         };
                                         content = statusMap[content] || content;
+                                    }
+
+                                    if (col.key === 'residence') {
+                                        if (emp.permanentRoom?.Apartment?.Building?.name) {
+                                            content = emp.permanentRoom.Apartment.Building.name;
+                                        } else if (emp.temporaryRoom?.Apartment?.Building?.name) {
+                                            content = `${emp.temporaryRoom.Apartment.Building.name} (مؤقت)`;
+                                        } else {
+                                            content = '-';
+                                        }
                                     }
 
                                     return (
