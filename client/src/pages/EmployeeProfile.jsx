@@ -379,6 +379,41 @@ export default function EmployeeProfile() {
                                 </div>
                             </div>
                         )}
+                        {employee.address && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>العنوان</div>
+                                    <div style={{ fontWeight: '500' }}>{employee.address}</div>
+                                </div>
+                                <div style={{ padding: '0.75rem', background: '#f1f5f9', borderRadius: '8px' }}>
+                                    <Building size={20} color="var(--primary-color)" />
+                                </div>
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            {employee.cairoPhone && (
+                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>تليفون القاهرة</div>
+                                        <div style={{ fontWeight: '500' }}>{employee.cairoPhone}</div>
+                                    </div>
+                                    <div style={{ padding: '0.75rem', background: '#f1f5f9', borderRadius: '8px' }}>
+                                        <Hash size={20} color="var(--primary-color)" />
+                                    </div>
+                                </div>
+                            )}
+                            {employee.cameroonPhone && (
+                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>تليفون الكاميرون</div>
+                                        <div style={{ fontWeight: '500' }}>{employee.cameroonPhone}</div>
+                                    </div>
+                                    <div style={{ padding: '0.75rem', background: '#f1f5f9', borderRadius: '8px' }}>
+                                        <Hash size={20} color="var(--primary-color)" />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         <h3 style={{ margin: '2rem 0 1rem 0', color: 'var(--text-secondary)', fontSize: '0.9rem', textTransform: 'uppercase' }}>معلومات السكن</h3>
                         {(employee.permanentRoom || employee.temporaryRoom) ? (
@@ -465,6 +500,39 @@ export default function EmployeeProfile() {
                                 </div>
                                 <div style={{ padding: '0.75rem', background: '#f1f5f9', borderRadius: '8px' }}>
                                     <Briefcase size={20} color="var(--primary-color)" />
+                                </div>
+                            </div>
+                        )}
+                        {employee.currentWorkLocation && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>جهة العمل الحالية</div>
+                                    <div style={{ fontWeight: '500' }}>{employee.currentWorkLocation}</div>
+                                </div>
+                                <div style={{ padding: '0.75rem', background: '#f1f5f9', borderRadius: '8px' }}>
+                                    <Building size={20} color="var(--primary-color)" />
+                                </div>
+                            </div>
+                        )}
+                        {employee.departmentBeforeLoan && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>الإدارة قبل الإعارة</div>
+                                    <div style={{ fontWeight: '500' }}>{employee.departmentBeforeLoan}</div>
+                                </div>
+                                <div style={{ padding: '0.75rem', background: '#f1f5f9', borderRadius: '8px' }}>
+                                    <Building size={20} color="var(--primary-color)" />
+                                </div>
+                            </div>
+                        )}
+                        {employee.efficiencyReport && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>تقرير الكفاءة</div>
+                                    <div style={{ fontWeight: '500' }}>{employee.efficiencyReport}</div>
+                                </div>
+                                <div style={{ padding: '0.75rem', background: '#f1f5f9', borderRadius: '8px' }}>
+                                    <FileText size={20} color="var(--primary-color)" />
                                 </div>
                             </div>
                         )}
@@ -735,6 +803,8 @@ export default function EmployeeProfile() {
                             {employee.costCenter && <div style={{ fontSize: '16px' }}><strong>مركز التكلفة:</strong> {employee.costCenter}</div>}
                             <div style={{ fontSize: '16px' }}><strong>البريد الإلكتروني:</strong> {employee.email || '-'}</div>
                             {employee.fixedNumber && <div style={{ fontSize: '16px' }}><strong>الرقم الثابت:</strong> {employee.fixedNumber}</div>}
+                            {employee.cairoPhone && <div style={{ fontSize: '16px' }}><strong>تليفون القاهرة:</strong> {employee.cairoPhone}</div>}
+                            {employee.cameroonPhone && <div style={{ fontSize: '16px' }}><strong>تليفون الكاميرون:</strong> {employee.cameroonPhone}</div>}
                         </div>
                     </div>
                 </div>
@@ -742,8 +812,14 @@ export default function EmployeeProfile() {
                 {/* Details Table */}
                 <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15mm', fontSize: '16px' }}>
                     <tbody>
-                        <tr style={{ background: '#f8f9fa' }}>
-                            <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold', width: '30%' }}>تاريخ التعيين</td>
+                        {employee.address && (
+                            <tr style={{ background: '#f8f9fa' }}>
+                                <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold', width: '30%' }}>العنوان</td>
+                                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{employee.address}</td>
+                            </tr>
+                        )}
+                        <tr>
+                            <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>تاريخ التعيين</td>
                             <td style={{ padding: '10px', border: '1px solid #ddd' }}>{employee.dateHired}</td>
                         </tr>
                         <tr>
@@ -794,6 +870,24 @@ export default function EmployeeProfile() {
                             <tr>
                                 <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>تاريخ العودة من الأجازة</td>
                                 <td style={{ padding: '10px', border: '1px solid #ddd', color: '#0369a1' }}>{employee.vacationReturnDate}</td>
+                            </tr>
+                        )}
+                        {employee.currentWorkLocation && (
+                            <tr style={{ background: '#f8f9fa' }}>
+                                <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>جهة السفر الحالية</td>
+                                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{employee.currentWorkLocation}</td>
+                            </tr>
+                        )}
+                        {employee.departmentBeforeLoan && (
+                            <tr>
+                                <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>الإدارة قبل الإعارة</td>
+                                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{employee.departmentBeforeLoan}</td>
+                            </tr>
+                        )}
+                        {employee.efficiencyReport && (
+                            <tr style={{ background: '#f8f9fa' }}>
+                                <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>تقرير الكفاءة</td>
+                                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{employee.efficiencyReport}</td>
                             </tr>
                         )}
 

@@ -47,7 +47,13 @@ export default function EmployeeList() {
         { key: 'currentJobTitleDate', label: 'تاريخ المسمى' },
         { key: 'maritalStatus', label: 'الحالة الاجتماعية' },
         { key: 'loanStartDate', label: 'تاريخ بداية الإعارة' },
-        { key: 'loanEndDate', label: 'تاريخ نهاية الإعارة' }
+        { key: 'loanEndDate', label: 'تاريخ نهاية الإعارة' },
+        { key: 'efficiencyReport', label: 'تقرير الكفاءة' },
+        { key: 'address', label: 'العنوان' },
+        { key: 'cairoPhone', label: 'التليفون بالقاهره' },
+        { key: 'cameroonPhone', label: 'التليفون بالكاميرون' },
+        { key: 'currentWorkLocation', label: 'جهه العمل الحاليه' },
+        { key: 'departmentBeforeLoan', label: 'الادارة قبل الاعاره' }
     ];
 
     const [visibleColumns, setVisibleColumns] = useState(() => {

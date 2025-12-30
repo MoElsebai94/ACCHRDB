@@ -32,7 +32,13 @@ export default function EmployeeForm() {
         currentJobTitleDate: '',
         loanStartDate: '',
         loanEndDate: '',
-        isActive: true
+        isActive: true,
+        departmentBeforeLoan: '',
+        currentWorkLocation: '',
+        cairoPhone: '',
+        cameroonPhone: '',
+        address: '',
+        efficiencyReport: ''
     });
 
     const [selectedFile, setSelectedFile] = useState(null);
@@ -581,6 +587,69 @@ export default function EmployeeForm() {
                             value={formData.arrivalDate || ''}
                             onChange={handleChange}
                             required
+                        />
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                    <div className="input-group">
+                        <label className="input-label">العنوان</label>
+                        <input
+                            className="input-field"
+                            name="address"
+                            value={formData.address || ''}
+                            onChange={handleChange}
+                        />
+                    </div>
+                    <div className="input-group">
+                        <label className="input-label">تقرير الكفاءة</label>
+                        <input
+                            className="input-field"
+                            name="efficiencyReport"
+                            value={formData.efficiencyReport || ''}
+                            onChange={handleChange}
+                        />
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="input-group">
+                        <label className="input-label">التليفون بالقاهره</label>
+                        <input
+                            className="input-field"
+                            name="cairoPhone"
+                            value={formData.cairoPhone || ''}
+                            onChange={handleChange}
+                        />
+                    </div>
+                    <div className="input-group">
+                        <label className="input-label">التليفون بالكاميرون</label>
+                        <input
+                            className="input-field"
+                            name="cameroonPhone"
+                            value={formData.cameroonPhone || ''}
+                            onChange={handleChange}
+                        />
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="input-group">
+                        <label className="input-label">جهه العمل الحاليه</label>
+                        <input
+                            className="input-field"
+                            name="currentWorkLocation"
+                            value={formData.currentWorkLocation || ''}
+                            onChange={handleChange}
+                        />
+                    </div>
+                    <div className="input-group">
+                        <label className="input-label">الادارة قبل الاعاره</label>
+                        <input
+                            className="input-field"
+                            name="departmentBeforeLoan"
+                            value={formData.departmentBeforeLoan || ''}
+                            onChange={handleChange}
                         />
                     </div>
                 </div>

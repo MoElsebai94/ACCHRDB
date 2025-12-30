@@ -105,6 +105,30 @@ const Employee = sequelize.define('Employee', {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   },
+  departmentBeforeLoan: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  currentWorkLocation: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  cairoPhone: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  cameroonPhone: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  address: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  efficiencyReport: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   photoUrl: {
     type: DataTypes.STRING,
     allowNull: true
