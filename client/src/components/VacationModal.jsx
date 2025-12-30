@@ -71,8 +71,17 @@ export default function VacationModal({ isOpen, onClose, onConfirm, employee }) 
         if (!travelDate || !returnDate) return { regular: 0, deduction: 0, total: 0, regularEndDateStr: '', deductionStartDateStr: '', deductionEndDateStr: '', vacationStartDateStr: '' };
 
         // Vacation starts the day AFTER travel
-        const vStart = new Date(travelDate);
-        vStart.setDate(vStart.getDate() + 1);
+        // Manual parse to guarantee UTC behavior across all environments
+        const [y, m, d] = travelDate.split('-').map(Number);
+        const vStart = new Date(Date.UTC(y, m - 1, d)); // Midnight UTC
+
+        // Special Rule: Ethiopian Airlines ALWAYS starts vacation 2 days after travel (regardless of day)
+        if (airline.includes('الإثيوبية')) {
+            vStart.setUTCDate(vStart.getUTCDate() + 2);
+        } else {
+            vStart.setUTCDate(vStart.getUTCDate() + 1);
+        }
+
         const vacationStartDateStr = vStart.toISOString().split('T')[0];
 
         const totalDuration = Math.ceil((new Date(returnDate) - vStart) / (1000 * 60 * 60 * 24));
@@ -80,7 +89,7 @@ export default function VacationModal({ isOpen, onClose, onConfirm, employee }) 
         // Determine the start of the working period
         const lastReturn = employee?.vacationReturnDate || employee?.arrivalDate;
 
-        // Fallback if no valid start date is found: Treat all as regular
+        // Fallback if no valid start date is found
         if (!lastReturn) {
             const rEnd = new Date(returnDate);
             rEnd.setDate(rEnd.getDate() - 1);
@@ -121,11 +130,11 @@ export default function VacationModal({ isOpen, onClose, onConfirm, employee }) 
         if (deduction > 0) {
             // Split scenario
             const rEnd = new Date(vStart);
-            rEnd.setDate(rEnd.getDate() + regular - 1); // Regular End = Start + Duration - 1
+            rEnd.setDate(rEnd.getDate() + regular - 1);
             regularEndDateStr = rEnd.toISOString().split('T')[0];
 
             const dStart = new Date(vStart);
-            dStart.setDate(dStart.getDate() + regular); // Deduction Start = Start + Regular
+            dStart.setDate(dStart.getDate() + regular);
             deductionStartDateStr = dStart.toISOString().split('T')[0];
 
             deductionEndDateStr = globalEndDateStr;
@@ -138,6 +147,7 @@ export default function VacationModal({ isOpen, onClose, onConfirm, employee }) 
     };
 
     const { regular, deduction, total, regularEndDateStr, deductionStartDateStr, deductionEndDateStr, vacationStartDateStr } = calculateVacations();
+    const vacationStartDisplay = vacationStartDateStr;
 
     const formatDate = (dateStr) => dateStr ? dateStr.replace(/-/g, '/') : '...';
 
@@ -307,6 +317,24 @@ export default function VacationModal({ isOpen, onClose, onConfirm, employee }) 
                             style={{ textAlign: 'right' }}
                         />
                     </div>
+
+                    {/* Debug/Confirmation Display */}
+                    {travelDate && (
+                        <div style={{
+                            marginBottom: '1rem',
+                            padding: '0.75rem',
+                            background: '#f0f9ff',
+                            borderRadius: '0.5rem',
+                            border: '1px solid #bae6fd',
+                            fontSize: '0.9rem',
+                            color: '#0369a1',
+                            display: 'flex',
+                            justifyContent: 'space-between'
+                        }}>
+                            <span>{formatDate(vacationStartDisplay)}</span>
+                            <span style={{ fontWeight: 'bold' }}>:تاريخ بداية الأجازة</span>
+                        </div>
+                    )}
 
                     <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', flexDirection: 'column' }}>
                         <button
