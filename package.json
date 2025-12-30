@@ -27,9 +27,6 @@
       "package.json"
     ],
     "asar": false,
-    "mac": {
-      "target": "dmg"
-    },
     "win": {
       "target": [
         {
@@ -38,7 +35,12 @@
             "x64"
           ]
         }
-      ]
+      ],
+      "icon": "client/public/logo.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "client/public/logo.png"
     }
   },
   "keywords": [],

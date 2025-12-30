@@ -755,34 +755,48 @@ export default function EmployeeProfile() {
                 onConfirm={confirmDeleteHistory}
             />
             {/* Hidden PDF Content */}
-            <div id="pdf-content" style={{ display: 'none', width: '210mm', padding: '20mm', background: 'white', color: 'black', direction: 'rtl', position: 'absolute', top: 0, right: '-9999px' }}>
+            <div id="pdf-content" style={{
+                display: 'none',
+                width: '210mm',
+                height: '297mm', // Fixed A4 height for absolute positioning
+                padding: '10mm',
+                background: 'white',
+                color: 'black',
+                direction: 'rtl',
+                position: 'absolute',
+                top: 0,
+                right: '-9999px',
+                boxSizing: 'border-box'
+            }}>
                 {/* Header with Logo */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #000', paddingBottom: '10mm', marginBottom: '10mm' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #2980b9', paddingBottom: '5mm', marginBottom: '5mm' }}>
                     <div style={{ textAlign: 'right' }}>
-                        <h1 style={{ fontSize: '24px', margin: 0, color: '#000' }}>المقاولون العرب - الكاميرون</h1>
-                        <p style={{ margin: '5px 0 0', fontSize: '14px', color: '#666' }}>إدارة الموارد البشرية</p>
+                        <h1 style={{ fontSize: '20px', margin: 0, color: '#2c3e50', fontWeight: 'bold' }}>المقاولون العرب الكاميرونيه</h1>
+                        <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#7f8c8d' }}>إدارة الموارد البشرية</p>
                     </div>
-                    <img src={logo} alt="Logo" style={{ width: '80px', height: 'auto' }} />
+                    <img src={logo} alt="Logo" style={{ width: '60px', height: 'auto' }} />
                 </div>
 
-                {/* Profile Title */}
-                <div style={{ textAlign: 'center', marginBottom: '15mm' }}>
-                    <h2 style={{ fontSize: '28px', margin: 0, textDecoration: 'underline' }}>بيانات موظف</h2>
-                    <p style={{ margin: '5px 0 0', color: '#666' }}>تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</p>
+                {/* Profile Title & Date */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '5mm' }}>
+                    <h2 style={{ fontSize: '22px', margin: 0, color: '#2c3e50' }}>بيانات موظف</h2>
+                    <p style={{ margin: 0, fontSize: '12px', color: '#7f8c8d' }}>تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</p>
                 </div>
 
-                {/* Main Info */}
-                <div style={{ display: 'flex', gap: '20mm', marginBottom: '15mm' }}>
+                {/* Main Info Block */}
+                <div style={{ display: 'flex', gap: '10mm', marginBottom: '5mm', alignItems: 'flex-start' }}>
+                    {/* Photo */}
                     <div style={{
-                        width: '40mm',
-                        height: '40mm',
-                        borderRadius: '50%',
+                        width: '30mm',
+                        height: '30mm',
+                        borderRadius: '15px', // Softer square
                         overflow: 'hidden',
-                        border: '2px solid #eee',
+                        border: '1px solid #e2e8f0',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        background: '#f8f9fa'
+                        background: '#f8fafc',
+                        flexShrink: 0
                     }}>
                         {employee.photoUrl ? (
                             <img
@@ -791,118 +805,105 @@ export default function EmployeeProfile() {
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
                         ) : (
-                            <span style={{ fontSize: '24px', fontWeight: 'bold' }}>{employee.firstName[0]}{employee.lastName[0]}</span>
+                            <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#64748b' }}>{employee.firstName[0]}{employee.lastName[0]}</span>
                         )}
                     </div>
-                    <div>
-                        <h3 style={{ fontSize: '24px', margin: '0 0 10px 0' }}>{employee.firstName} {employee.lastName}</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
-                            <div style={{ fontSize: '16px' }}><strong>المسمى الوظيفي:</strong> {employee.position} {employee.currentJobTitleDate && <span style={{ fontSize: '14px', color: '#666' }}>({employee.currentJobTitleDate})</span>}</div>
-                            {employee.jobRole && <div style={{ fontSize: '16px' }}><strong>الوظيفة:</strong> {employee.jobRole}</div>}
-                            <div style={{ fontSize: '16px' }}><strong>القسم:</strong> {employee.department}</div>
-                            {employee.costCenter && <div style={{ fontSize: '16px' }}><strong>مركز التكلفة:</strong> {employee.costCenter}</div>}
-                            <div style={{ fontSize: '16px' }}><strong>البريد الإلكتروني:</strong> {employee.email || '-'}</div>
-                            {employee.fixedNumber && <div style={{ fontSize: '16px' }}><strong>الرقم الثابت:</strong> {employee.fixedNumber}</div>}
-                            {employee.cairoPhone && <div style={{ fontSize: '16px' }}><strong>تليفون القاهرة:</strong> {employee.cairoPhone}</div>}
-                            {employee.cameroonPhone && <div style={{ fontSize: '16px' }}><strong>تليفون الكاميرون:</strong> {employee.cameroonPhone}</div>}
+
+                    {/* Basic Data Grid */}
+                    <div style={{ flex: 1 }}>
+                        <h3 style={{ fontSize: '20px', margin: '0 0 10px 0', color: '#1e293b' }}>{employee.firstName} {employee.lastName}</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 20px', fontSize: '12px' }}>
+                            <div><strong>المسمى الوظيفي:</strong> {employee.position} {employee.currentJobTitleDate && <span style={{ color: '#64748b' }}>({employee.currentJobTitleDate})</span>}</div>
+                            {employee.jobRole && <div><strong>الوظيفة:</strong> {employee.jobRole}</div>}
+                            <div><strong>القسم:</strong> {employee.department}</div>
+                            {employee.costCenter && <div><strong>مركز التكلفة:</strong> {employee.costCenter}</div>}
+                            <div><strong>البريد الإلكتروني:</strong> {employee.email || '-'}</div>
+                            {employee.address && <div><strong>العنوان:</strong> {employee.address}</div>}
+
+                            {/* Phone Numbers Group */}
+                            {employee.cairoPhone && <div><strong>تليفون القاهرة:</strong> {employee.cairoPhone}</div>}
+                            {employee.cameroonPhone && <div><strong>تليفون الكاميرون:</strong> {employee.cameroonPhone}</div>}
+                            {employee.fixedNumber && <div><strong>الرقم الثابت:</strong> {employee.fixedNumber}</div>}
                         </div>
                     </div>
                 </div>
 
                 {/* Details Table */}
-                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15mm', fontSize: '16px' }}>
-                    <tbody>
-                        {employee.address && (
-                            <tr style={{ background: '#f8f9fa' }}>
-                                <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold', width: '30%' }}>العنوان</td>
-                                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{employee.address}</td>
-                            </tr>
-                        )}
-                        <tr>
-                            <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>تاريخ التعيين</td>
-                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>{employee.dateHired}</td>
-                        </tr>
-                        <tr>
-                            <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>تاريخ بداية العقد</td>
-                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>{employee.contractStartDate}</td>
-                        </tr>
-                        <tr style={{ background: '#f8f9fa' }}>
-                            <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>تاريخ نهاية العقد</td>
-                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>{employee.contractEndDate}</td>
-                        </tr>
-                        <tr>
-                            <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>تاريخ الوصول</td>
-                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>{employee.arrivalDate || '-'}</td>
-                        </tr>
-                        <tr style={{ background: '#f8f9fa' }}>
-                            <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>الراتب الأساسي</td>
-                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>${Number(employee.salary).toLocaleString()}</td>
-                        </tr>
-                        <tr>
-                            <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>المؤهل</td>
-                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>{employee.qualification || '-'} {employee.qualificationDate && `(${employee.qualificationDate})`}</td>
-                        </tr>
-                        <tr style={{ background: '#f8f9fa' }}>
-                            <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>الدرجة الوظيفية</td>
-                            <td style={{ padding: '10px', border: '1px solid #ddd' }}>{employee.grade || '-'} {employee.gradeDate && `(${employee.gradeDate})`}</td>
-                        </tr>
-                        {employee.maritalStatus && (
-                            <tr>
-                                <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>الحالة الاجتماعية</td>
-                                <td style={{ padding: '10px', border: '1px solid #ddd' }}>
-                                    {employee.maritalStatus === 'Single' && 'أعزب'}
-                                    {employee.maritalStatus === 'Married' && 'متزوج'}
-                                    {employee.maritalStatus === 'MarriedWithDependents' && 'متزوج و يعول'}
-                                    {employee.maritalStatus === 'Divorced' && 'مطلق'}
-                                    {employee.maritalStatus === 'Widowed' && 'أرمل'}
-                                </td>
-                            </tr>
-                        )}
-                        {employee.loanStartDate && (
-                            <tr style={{ background: '#f8f9fa' }}>
-                                <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>فترة الإعارة</td>
-                                <td style={{ padding: '10px', border: '1px solid #ddd' }}>
-                                    من {employee.loanStartDate} {employee.loanEndDate && `إلى ${employee.loanEndDate}`}
-                                </td>
-                            </tr>
-                        )}
-                        {employee.vacationReturnDate && (
-                            <tr>
-                                <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>تاريخ العودة من الأجازة</td>
-                                <td style={{ padding: '10px', border: '1px solid #ddd', color: '#0369a1' }}>{employee.vacationReturnDate}</td>
-                            </tr>
-                        )}
-                        {employee.currentWorkLocation && (
-                            <tr style={{ background: '#f8f9fa' }}>
-                                <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>جهة السفر الحالية</td>
-                                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{employee.currentWorkLocation}</td>
-                            </tr>
-                        )}
-                        {employee.departmentBeforeLoan && (
-                            <tr>
-                                <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>الإدارة قبل الإعارة</td>
-                                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{employee.departmentBeforeLoan}</td>
-                            </tr>
-                        )}
-                        {employee.efficiencyReport && (
-                            <tr style={{ background: '#f8f9fa' }}>
-                                <td style={{ padding: '10px', border: '1px solid #ddd', fontWeight: 'bold' }}>تقرير الكفاءة</td>
-                                <td style={{ padding: '10px', border: '1px solid #ddd' }}>{employee.efficiencyReport}</td>
-                            </tr>
-                        )}
+                {/* Details Grid (Replaces Table) */}
+                {/* Details Flexbox Table (Replaces Grid/Table) */}
+                <div style={{
+                    border: '1px solid #e2e8f0',
+                    borderBottom: 'none', // Last row adds bottom border
+                    marginBottom: '5mm',
+                    fontSize: '12px',
+                    direction: 'rtl'
+                }}>
+                    {/* Helper for Row */}
+                    {[
+                        [
+                            { label: 'تاريخ التعيين', value: employee.dateHired },
+                            { label: 'تاريخ الوصول', value: employee.arrivalDate || '-' }
+                        ],
+                        [
+                            { label: 'تاريخ بداية العقد', value: employee.contractStartDate },
+                            { label: 'تاريخ نهاية العقد', value: employee.contractEndDate }
+                        ],
+                        [
+                            { label: 'الراتب الأساسي', value: `$${Number(employee.salary).toLocaleString()}` },
+                            {
+                                label: 'الحالة الاجتماعية', value: (() => {
+                                    const statusMap = { 'Single': 'أعزب', 'Married': 'متزوج', 'MarriedWithDependents': 'متزوج و يعول', 'Divorced': 'مطلق', 'Widowed': 'أرمل' };
+                                    return statusMap[employee.maritalStatus] || employee.maritalStatus || '-';
+                                })()
+                            }
+                        ],
+                        [
+                            { label: 'المؤهل', value: `${employee.qualification || '-'} ${employee.qualificationDate ? `(${employee.qualificationDate})` : ''}` },
+                            { label: 'الدرجة الوظيفية', value: `${employee.grade || '-'} ${employee.gradeDate ? `(${employee.gradeDate})` : ''}` }
+                        ],
+                        [
+                            { label: 'جهة العمل الحالية', value: employee.currentWorkLocation || '-' },
+                            { label: 'الإدارة قبل الإعارة', value: employee.departmentBeforeLoan || '-' }
+                        ],
+                        [
+                            { label: 'تقرير الكفاءة', value: employee.efficiencyReport || '-' },
+                            { label: 'الاستراحه', value: employee.permanentRoom?.Apartment?.Building?.name || (employee.temporaryRoom?.Apartment?.Building?.name ? `${employee.temporaryRoom.Apartment.Building.name} (مؤقت)` : '-') }
+                        ]
+                    ].map((row, idx) => (
+                        <div key={idx} style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
+                            <div style={{ width: '20%', padding: '6px 8px', fontWeight: 'bold', background: '#f8fafc', borderLeft: '1px solid #e2e8f0' }}>{row[0].label}</div>
+                            <div style={{ width: '30%', padding: '6px 8px', background: 'white', borderLeft: '1px solid #e2e8f0' }}>{row[0].value}</div>
+                            <div style={{ width: '20%', padding: '6px 8px', fontWeight: 'bold', background: '#f8fafc', borderLeft: '1px solid #e2e8f0' }}>{row[1].label}</div>
+                            <div style={{ width: '30%', padding: '6px 8px', background: 'white' }}>{row[1].value}</div>
+                        </div>
+                    ))}
 
-                    </tbody>
-                </table>
+                    {/* Row 7 - Loan Period (Full Width) */}
+                    {employee.loanStartDate && (
+                        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
+                            <div style={{ width: '20%', padding: '6px 8px', fontWeight: 'bold', background: '#f8fafc', borderLeft: '1px solid #e2e8f0' }}>فترة الإعارة</div>
+                            <div style={{ width: '80%', padding: '6px 8px', background: 'white' }}>
+                                من {employee.loanStartDate} {employee.loanEndDate && `إلى ${employee.loanEndDate}`}
+                            </div>
+                        </div>
+                    )}
 
-                {/* Residence Section in PDF */}
-
+                    {/* Row 8 - Vacation Return Date (Full Width) */}
+                    {employee.vacationReturnDate && (
+                        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
+                            <div style={{ width: '20%', padding: '6px 8px', fontWeight: 'bold', background: '#f8fafc', borderLeft: '1px solid #e2e8f0' }}>تاريخ العودة من الأجازة</div>
+                            <div style={{ width: '80%', padding: '6px 8px', background: 'white', color: '#0369a1' }}>
+                                {employee.vacationReturnDate}
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 {/* Footer */}
-                <div style={{ position: 'absolute', bottom: '20mm', left: '20mm', right: '20mm', textAlign: 'center', fontSize: '12px', color: '#888', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                <div style={{ position: 'absolute', bottom: '10mm', left: '10mm', right: '10mm', textAlign: 'center', fontSize: '10px', color: '#94a3b8', borderTop: '1px solid #e2e8f0', paddingTop: '5mm' }}>
                     تم استخراج هذا المستند من نظام إدارة الموارد البشرية - المقاولون العرب الكاميرونية
                 </div>
             </div>
-
         </div>
     );
 }
