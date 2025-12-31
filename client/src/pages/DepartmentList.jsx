@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Trash2, FolderTree } from 'lucide-react';
+import { Trash2, FolderTree, Pencil, X } from 'lucide-react';
 import { API_URL } from '../utils/api';
 import ConfirmationModal from '../components/ConfirmationModal';
 import PageLoading from '../components/PageLoading';
+import CustomSelect from '../components/CustomSelect';
 
 export default function DepartmentList() {
     const [departments, setDepartments] = useState([]);
     const [newDept, setNewDept] = useState('');
     const [newDeptParent, setNewDeptParent] = useState('');
+    const [editingId, setEditingId] = useState(null); // Track editing state
     const [loading, setLoading] = useState(true);
     const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null });
 
@@ -34,8 +36,11 @@ export default function DepartmentList() {
         if (!newDept.trim()) return;
 
         try {
-            const response = await fetch(`${API_URL}/departments`, {
-                method: 'POST',
+            const url = editingId ? `${API_URL}/departments/${editingId}` : `${API_URL}/departments`;
+            const method = editingId ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: newDept,
@@ -46,13 +51,27 @@ export default function DepartmentList() {
             if (response.ok) {
                 setNewDept('');
                 setNewDeptParent('');
+                setEditingId(null);
                 fetchDepartments();
             }
         } catch (error) {
-            console.error('Error adding department:', error);
+            console.error('Error saving department:', error);
         }
     };
 
+    const handleEdit = (dept) => {
+        setNewDept(dept.name);
+        setNewDeptParent(dept.parentId || '');
+        setEditingId(dept.id);
+    };
+
+    const cancelEdit = () => {
+        setNewDept('');
+        setNewDeptParent('');
+        setEditingId(null);
+    };
+
+    // ... handleDelete and getOrganizedDepartments remain same ...  
     const handleDelete = async () => {
         const id = confirmDelete.id;
         try {
@@ -101,6 +120,17 @@ export default function DepartmentList() {
 
     const organizedDepartments = getOrganizedDepartments();
 
+    // Prepare options for CustomSelect, restricted to max depth for parents
+    const parentOptions = [
+        { value: '', label: '-- قسم رئيسي --' },
+        ...organizedDepartments
+            .filter(d => d.level < 1 && d.id !== editingId) // Limit: Can only add under Root (0)
+            .map(d => ({
+                value: d.id,
+                label: (d.level > 0 ? '\u00A0\u00A0\u00A0\u00A0↳ ' : '') + d.name
+            }))
+    ];
+
     if (loading) return <PageLoading />;
 
     return (
@@ -110,10 +140,12 @@ export default function DepartmentList() {
                 إدارة الأقسام
             </h1>
 
-            <div className="card" style={{ marginBottom: '2rem' }}>
+            <div className="card" style={{ marginBottom: '2rem', position: 'relative', zIndex: 20 }}>
                 <form onSubmit={handleAdd} style={{ display: 'flex', gap: '1rem', alignItems: 'end', flexWrap: 'wrap' }}>
                     <div style={{ flex: 1, minWidth: '200px' }}>
-                        <label className="input-label">اسم القسم الجديد</label>
+                        <label className="input-label">
+                            {editingId ? 'تعديل اسم القسم' : 'اسم القسم الجديد'}
+                        </label>
                         <input
                             className="input-field"
                             value={newDept}
@@ -124,22 +156,29 @@ export default function DepartmentList() {
                     </div>
                     <div style={{ minWidth: '200px' }}>
                         <label className="input-label">تابع لقسم (اختياري)</label>
-                        <select
-                            className="input-field"
+                        <CustomSelect
+                            options={parentOptions}
                             value={newDeptParent}
-                            onChange={(e) => setNewDeptParent(e.target.value)}
-                        >
-                            <option value="">-- قسم رئيسي --</option>
-                            {organizedDepartments.map(dept => (
-                                <option key={dept.id} value={dept.id}>
-                                    {'\u00A0\u00A0'.repeat(dept.level)} {dept.level > 0 ? '↳ ' : ''} {dept.name}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={setNewDeptParent}
+                            placeholder="-- قسم رئيسي --"
+                        />
                     </div>
-                    <button type="submit" className="btn btn-primary" style={{ marginBottom: '2px' }}>
-                        + إضافة قسم
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <button type="submit" className="btn btn-primary" style={{ marginBottom: '2px' }}>
+                            {editingId ? 'حفظ التعديلات' : '+ إضافة قسم'}
+                        </button>
+                        {editingId && (
+                            <button
+                                type="button"
+                                onClick={cancelEdit}
+                                className="btn btn-secondary"
+                                style={{ marginBottom: '2px', padding: '0.75rem' }}
+                                title="إلغاء"
+                            >
+                                <X size={20} />
+                            </button>
+                        )}
+                    </div>
                 </form>
             </div>
 
@@ -149,7 +188,7 @@ export default function DepartmentList() {
                         <tr>
                             <th>اسم القسم</th>
                             <th>التبعية</th>
-                            <th style={{ width: '100px' }}>إجراءات</th>
+                            <th style={{ width: '120px' }}>إجراءات</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -159,7 +198,7 @@ export default function DepartmentList() {
                             </tr>
                         ) : (
                             organizedDepartments.map((dept) => (
-                                <tr key={dept.id}>
+                                <tr key={dept.id} style={{ backgroundColor: editingId === dept.id ? '#f1f5f9' : 'transparent' }}>
                                     <td style={{
                                         fontWeight: dept.level === 0 ? '600' : '400',
                                         paddingRight: `${dept.level * 20 + 10}px`
@@ -171,9 +210,14 @@ export default function DepartmentList() {
                                         {dept.parentId ? 'قسم فرعي' : 'قسم رئيسي'}
                                     </td>
                                     <td>
-                                        <button onClick={() => setConfirmDelete({ isOpen: true, id: dept.id })} className="btn btn-danger" style={{ padding: '0.4rem' }}>
-                                            <Trash2 size={16} />
-                                        </button>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button onClick={() => handleEdit(dept)} className="btn btn-secondary" style={{ padding: '0.4rem', color: '#3b82f6', borderColor: '#3b82f6' }}>
+                                                <Pencil size={16} />
+                                            </button>
+                                            <button onClick={() => setConfirmDelete({ isOpen: true, id: dept.id })} className="btn btn-danger" style={{ padding: '0.4rem' }}>
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))

@@ -155,6 +155,20 @@ app.post('/api/departments', async (req, res) => {
     }
 });
 
+app.put('/api/departments/:id', async (req, res) => {
+    try {
+        const department = await Department.findByPk(req.params.id);
+        if (department) {
+            await department.update(req.body);
+            res.json(department);
+        } else {
+            res.status(404).json({ error: 'Department not found' });
+        }
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
 app.delete('/api/departments/:id', async (req, res) => {
     try {
         const result = await Department.destroy({ where: { id: req.params.id } });
