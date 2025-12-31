@@ -69,6 +69,10 @@ const Employee = sequelize.define('Employee', {
     type: DataTypes.DATEONLY,
     allowNull: true
   },
+  vacationStartDate: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
+  },
   qualification: {
     type: DataTypes.STRING,
     allowNull: true

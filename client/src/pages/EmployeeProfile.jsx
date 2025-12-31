@@ -630,6 +630,17 @@ export default function EmployeeProfile() {
                                 </div>
                             </div>
                         )}
+                        {employee.vacationStartDate && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>تاريخ بداية الأجازة</div>
+                                    <div style={{ fontWeight: '500', color: '#0284c7' }}>{employee.vacationStartDate}</div>
+                                </div>
+                                <div style={{ padding: '0.75rem', background: '#e0f2fe', borderRadius: '8px' }}>
+                                    <Calendar size={20} color="#0284c7" />
+                                </div>
+                            </div>
+                        )}
                         {employee.vacationReturnDate && (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                                 <div style={{ textAlign: 'right' }}>
@@ -737,6 +748,7 @@ export default function EmployeeProfile() {
                             body: JSON.stringify({
                                 ...employee,
                                 vacationReturnDate: vacationData.returnDate,
+                                vacationStartDate: vacationData.startDate, // Save the calculated start date
                                 arrivalDate: vacationData.returnDate // Automatically set Arrival Date to Vacation Return Date
                             })
                         });

@@ -559,7 +559,8 @@ export default function EmployeeList() {
                             </tr>
                         ) : (
                             sortedEmployees.map((emp) => {
-                                const isOnVacation = !!emp.vacationReturnDate;
+                                const today = new Date().toISOString().split('T')[0];
+                                const isOnVacation = emp.vacationReturnDate && (!emp.vacationStartDate || today >= emp.vacationStartDate);
                                 const isInactive = emp.isActive === false || emp.isActive === 0;
                                 const isGM = emp.department === 'المدير العام' || emp.department === 'General Manager';
 
@@ -751,10 +752,13 @@ export default function EmployeeList() {
                                     let content = emp[col.key] || '-';
 
                                     if (col.key === 'name') {
-                                        content = `${emp.firstName} ${emp.lastName}`;
+                                        // content = `${emp.firstName} ${emp.lastName}`; // This line is now redundant
                                         return (
                                             <td key={col.key} style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'right', fontWeight: 'bold' }}>
-                                                {content}
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-gray-900">{emp.firstName} {emp.lastName}</span>
+                                                    <span className="text-xs text-gray-400">{emp.position}</span>
+                                                </div>
                                             </td>
                                         );
                                     }

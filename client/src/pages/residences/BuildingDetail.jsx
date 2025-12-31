@@ -220,7 +220,9 @@ export default function BuildingDetail() {
                             {apt.rooms?.map(room => {
                                 const perm = room.permanentResident;
                                 const temp = room.temporaryResident;
-                                const onVacation = perm && perm.vacationReturnDate;
+                                const today = new Date().toISOString().split('T')[0];
+                                const onVacation = perm && perm.vacationReturnDate && (!perm.vacationStartDate || today >= perm.vacationStartDate);
+                                const futureVacation = perm && perm.vacationReturnDate && perm.vacationStartDate && today < perm.vacationStartDate;
 
                                 return (
                                     <div key={room.id} className="room-item">
@@ -254,6 +256,12 @@ export default function BuildingDetail() {
                                                                 <div className="vacation-badge">
                                                                     <Calendar size={12} />
                                                                     <span>إجازة عودة: {perm.vacationReturnDate}</span>
+                                                                </div>
+                                                            )}
+                                                            {futureVacation && (
+                                                                <div className="vacation-badge future">
+                                                                    <Calendar size={12} />
+                                                                    <span>سفر: {perm.vacationStartDate}</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -556,6 +564,10 @@ export default function BuildingDetail() {
                     padding: 2px 6px;
                     border-radius: 4px;
                     margin-top: 4px;
+                }
+                .vacation-badge.future {
+                    color: #0284c7;
+                    background: #e0f2fe;
                 }
                 .btn-sm {
                     padding: 0.4rem 0.8rem;

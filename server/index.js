@@ -859,7 +859,7 @@ app.get('/api/employees/:id', async (req, res) => {
 app.post('/api/employees', async (req, res) => {
     try {
         const employeeData = { ...req.body };
-        ['dateHired', 'contractStartDate', 'contractEndDate', 'arrivalDate', 'vacationReturnDate'].forEach(key => {
+        ['dateHired', 'contractStartDate', 'contractEndDate', 'arrivalDate', 'vacationReturnDate', 'vacationStartDate'].forEach(key => {
             if (employeeData[key] === '') employeeData[key] = null;
         });
 
@@ -887,7 +887,7 @@ app.put('/api/employees/:id', async (req, res) => {
             const { id, createdAt, updatedAt, ...updateData } = req.body;
 
             // Convert empty strings to null for date fields
-            ['dateHired', 'contractStartDate', 'contractEndDate', 'arrivalDate', 'vacationReturnDate'].forEach(key => {
+            ['dateHired', 'contractStartDate', 'contractEndDate', 'arrivalDate', 'vacationReturnDate', 'vacationStartDate'].forEach(key => {
                 if (updateData[key] === '') updateData[key] = null;
             });
 
@@ -989,6 +989,7 @@ const runMigrations = async () => {
             'loanEndDate',
             'qualification',
             'qualificationDate',
+            'vacationStartDate',
             'maritalStatus',
             'grade',
             'gradeDate',
