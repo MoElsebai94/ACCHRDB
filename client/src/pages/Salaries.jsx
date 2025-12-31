@@ -364,13 +364,21 @@ export default function Salaries() {
                     align-items: center;
                 }
                 .table-input {
-                    width: 100%;
+                    width: 90px;
                     padding: 0.5rem;
                     border: 1px solid #e2e8f0;
                     border-radius: 6px;
-                    font-size: 0.9rem;
+                    font-size: 0.95rem;
                     text-align: center;
                     transition: all 0.2s;
+                }
+                .table-input::-webkit-outer-spin-button,
+                .table-input::-webkit-inner-spin-button {
+                  -webkit-appearance: none;
+                  margin: 0;
+                }
+                .table-input[type=number] {
+                  -moz-appearance: textfield;
                 }
                 .table-input:focus {
                     outline: none;
