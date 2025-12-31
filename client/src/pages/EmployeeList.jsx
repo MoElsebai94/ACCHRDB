@@ -162,6 +162,56 @@ export default function EmployeeList() {
         });
     }, [employees, searchTerm, selectedDept, selectedCostCenter, selectedPosition, selectedBuilding, showInactive, deptDescendants]);
 
+    const sortedEmployees = useMemo(() => {
+        // 1. Create Map: Dept Name -> Hierarchical Index
+        const deptOrder = {};
+        // Highest Priority (Hardcoded GM)
+        deptOrder['المدير العام'] = -1;
+        deptOrder['General Manager'] = -1;
+
+        // Use the flattened options list (which respects hierarchy: Root -> Child -> Grandchild)
+        deptOptions.forEach((opt, index) => {
+            // Assign index + 10 to standard departments to ensure GM is always top
+            if (deptOrder[opt.value] === undefined) {
+                deptOrder[opt.value] = index + 10;
+            }
+        });
+
+        return [...filteredEmployees].sort((a, b) => {
+            const orderA = deptOrder[a.department] !== undefined ? deptOrder[a.department] : 9999;
+            const orderB = deptOrder[b.department] !== undefined ? deptOrder[b.department] : 9999;
+
+            if (orderA !== orderB) return orderA - orderB;
+
+            // Secondary: Name
+            return (a.firstName + a.lastName).localeCompare(b.firstName + b.lastName);
+        });
+    }, [filteredEmployees, deptOptions]);
+
+    const getDepartmentDisplay = (deptName) => {
+        if (!deptName || departments.length === 0) return deptName;
+
+        // Robust matching: trim and case-insensitive
+        const normalize = str => str ? str.toString().trim().toLowerCase() : '';
+        const targetName = normalize(deptName);
+        const dept = departments.find(d => normalize(d.name) === targetName);
+
+        if (dept && dept.parentId) {
+            // Loose equality for ID to handle string/number mismatch
+            const parent = departments.find(d => d.id == dept.parentId);
+            if (parent) {
+                return (
+                    <span>
+                        {parent.name}
+                        <span style={{ margin: '0 5px', color: '#94a3b8', fontWeight: 'normal' }}>/</span>
+                        {dept.name}
+                    </span>
+                );
+            }
+        }
+        return deptName;
+    };
+
     const toggleColumn = (key) => {
         setVisibleColumns(prev => {
             if (prev.includes(key)) {
@@ -499,22 +549,26 @@ export default function EmployeeList() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredEmployees.length === 0 ? (
+                        {sortedEmployees.length === 0 ? (
                             <tr>
                                 <td colSpan={visibleColumns.length + 1} style={{ textAlign: 'center', padding: '2rem' }}>لا يوجد موظفين مطابقين للبحث.</td>
                             </tr>
                         ) : (
-                            filteredEmployees.map((emp) => {
+                            sortedEmployees.map((emp) => {
                                 const isOnVacation = !!emp.vacationReturnDate;
-                                const isInactive = emp.isActive === false || emp.isActive === 0; // Handle boolean or integer storage
+                                const isInactive = emp.isActive === false || emp.isActive === 0;
+                                const isGM = emp.department === 'المدير العام' || emp.department === 'General Manager';
+
                                 return (
                                     <tr
                                         key={emp.id}
                                         className="employee-row"
                                         style={{
                                             cursor: 'pointer',
-                                            background: isInactive ? '#fff1f2' : (isOnVacation ? '#eff6ff' : 'transparent'),
-                                            opacity: isInactive ? 0.8 : 1
+                                            background: isGM ? '#fffbeb' : (isInactive ? '#fff1f2' : (isOnVacation ? '#eff6ff' : 'transparent')),
+                                            borderLeft: isGM ? '4px solid #f59e0b' : 'none',
+                                            opacity: isInactive ? 0.8 : 1,
+                                            boxShadow: isGM ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
                                         }}
                                     >
                                         {availableColumns.filter(c => visibleColumns.includes(c.key)).map(col => {
@@ -584,6 +638,11 @@ export default function EmployeeList() {
                                                     </td>
                                                 );
                                             }
+
+                                            if (col.key === 'department') {
+                                                return <td key={col.key}>{getDepartmentDisplay(emp.department)}</td>;
+                                            }
+
                                             // Handle other dynamic columns
                                             let cellContent = emp[col.key];
 
@@ -664,7 +723,7 @@ export default function EmployeeList() {
 
                 {/* Sub-header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', color: '#34495e', fontSize: '14px' }}>
-                    <div>عدد الموظفين: {filteredEmployees.length}</div>
+                    <div>عدد الموظفين: {sortedEmployees.length}</div>
                     <div>تاريخ التقرير: {new Date().toLocaleDateString('en-GB')}</div>
                 </div>
 
@@ -681,7 +740,7 @@ export default function EmployeeList() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredEmployees.map((emp, index) => (
+                        {sortedEmployees.map((emp, index) => (
                             <tr key={emp._id} style={{ backgroundColor: index % 2 === 0 ? '#f9f9f9' : 'white' }}>
                                 <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{index + 1}</td>
                                 {availableColumns.filter(col => visibleColumns.includes(col.key)).map(col => {
