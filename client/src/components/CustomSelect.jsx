@@ -107,18 +107,21 @@ export default function CustomSelect({
                         normalizedOptions.map((option) => (
                             <div
                                 key={option.value}
-                                onClick={() => handleSelect(option.value)}
+                                onClick={() => !option.disabled && handleSelect(option.value)}
                                 style={{
                                     padding: '0.75rem 1rem',
-                                    cursor: 'pointer',
+                                    cursor: option.disabled ? 'default' : 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
                                     backgroundColor: value === option.value ? '#f1f5f9' : 'transparent',
+                                    color: option.disabled ? '#94a3b8' : 'inherit',
+                                    fontWeight: option.disabled ? '600' : 'normal',
+                                    pointerEvents: option.disabled ? 'none' : 'auto',
                                     transition: 'background-color 0.15s'
                                 }}
                                 onMouseEnter={(e) => {
-                                    if (value !== option.value) e.currentTarget.style.backgroundColor = '#f8fafc';
+                                    if (!option.disabled && value !== option.value) e.currentTarget.style.backgroundColor = '#f8fafc';
                                 }}
                                 onMouseLeave={(e) => {
                                     if (value !== option.value) e.currentTarget.style.backgroundColor = 'transparent';

@@ -12,6 +12,7 @@ export default function Dashboard() {
         monthlySalary: 0
     });
     const [employeesList, setEmployeesList] = useState([]);
+    const [departmentsList, setDepartmentsList] = useState([]);
     const [residenceStats, setResidenceStats] = useState({
         totalBuildings: 0,
         totalRooms: 0,
@@ -51,6 +52,7 @@ export default function Dashboard() {
                     monthlySalary: totalSalary
                 });
                 setEmployeesList(activeEmployees);
+                setDepartmentsList(departments);
             }
 
             if (expRes.ok) {
@@ -117,7 +119,7 @@ export default function Dashboard() {
             </div>
 
             {/* Charts Section */}
-            <DashboardCharts employees={employeesList} />
+            <DashboardCharts employees={employeesList} departments={departmentsList} />
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem', marginTop: '1.5rem' }}>
                 {expiringContracts.length > 0 && (

@@ -26,11 +26,37 @@ export default function EmployeeProfile() {
     const [historyToDelete, setHistoryToDelete] = useState(null);
     const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', type: 'error' });
     const [loanHistory, setLoanHistory] = useState([]);
+    const [departments, setDepartments] = useState([]);
 
     useEffect(() => {
         fetchEmployee();
         fetchLoanHistory();
+        fetchDepartments();
     }, [id]);
+
+    const fetchDepartments = async () => {
+        try {
+            const response = await fetch(`${API_URL}/departments`);
+            if (response.ok) {
+                const data = await response.json();
+                setDepartments(data);
+            }
+        } catch (error) {
+            console.error('Error fetching departments:', error);
+        }
+    };
+
+    const getDepartmentDisplay = (deptName) => {
+        if (!deptName || departments.length === 0) return deptName;
+        const dept = departments.find(d => d.name === deptName);
+        if (dept && dept.parentId) {
+            const parent = departments.find(d => d.id === dept.parentId);
+            if (parent) {
+                return `${parent.name} / ${dept.name}`;
+            }
+        }
+        return deptName;
+    };
 
     const fetchLoanHistory = async () => {
         try {
@@ -314,7 +340,7 @@ export default function EmployeeProfile() {
                                 </span>
                             )}
                             <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Building size={16} /> {employee.department}
+                                <Building size={16} /> {getDepartmentDisplay(employee.department)}
                             </span>
                             {employee.costCenter && (
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

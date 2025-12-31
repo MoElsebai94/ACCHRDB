@@ -10,31 +10,59 @@ import {
     Cell
 } from 'recharts';
 
-export default function DashboardCharts({ employees = [] }) {
-    // 1. Calculate Employees Per Department
+export default function DashboardCharts({ employees = [], departments = [] }) {
+    // Helper: Map every department name to its ROOT parent name
+    const deptRootMap = useMemo(() => {
+        const map = {}; // ID -> Dept
+        const nameToId = {}; // Name -> ID
+
+        departments.forEach(d => {
+            map[d.id] = d;
+            nameToId[d.name] = d.id;
+        });
+
+        const rootMap = {}; // Name -> Root Name
+
+        departments.forEach(d => {
+            let current = d;
+            while (current.parentId && map[current.parentId]) {
+                current = map[current.parentId];
+            }
+            rootMap[d.name] = current.name;
+        });
+
+        return rootMap;
+    }, [departments]);
+
+    // 1. Calculate Employees Per Department (Aggregated by Root)
     const empPerDept = useMemo(() => {
         const counts = {};
         employees.forEach(emp => {
-            const dept = emp.department || 'غير محدد';
-            counts[dept] = (counts[dept] || 0) + 1;
+            const rowDept = emp.department || 'غير محدد';
+            // Resolve to root or keep as is if not found
+            const rootDept = deptRootMap[rowDept] || rowDept;
+
+            counts[rootDept] = (counts[rootDept] || 0) + 1;
         });
         return Object.entries(counts)
             .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => b.count - a.count); // Sort by count descending
-    }, [employees]);
+            .sort((a, b) => b.count - a.count);
+    }, [employees, deptRootMap]);
 
-    // 2. Calculate Salary Per Department
+    // 2. Calculate Salary Per Department (Aggregated by Root)
     const salaryPerDept = useMemo(() => {
         const salaries = {};
         employees.forEach(emp => {
-            const dept = emp.department || 'غير محدد';
+            const rowDept = emp.department || 'غير محدد';
+            const rootDept = deptRootMap[rowDept] || rowDept;
             const salary = parseFloat(emp.salary) || 0;
-            salaries[dept] = (salaries[dept] || 0) + salary;
+
+            salaries[rootDept] = (salaries[rootDept] || 0) + salary;
         });
         return Object.entries(salaries)
             .map(([name, total]) => ({ name, total }))
             .sort((a, b) => b.total - a.total);
-    }, [employees]);
+    }, [employees, deptRootMap]);
 
     // 3. Calculate Employees Per Cost Center
     const empPerCostCenter = useMemo(() => {

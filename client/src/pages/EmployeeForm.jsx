@@ -94,9 +94,15 @@ export default function EmployeeForm() {
                     nodes.forEach(node => {
                         // Create indented label
                         const prefix = level > 0 ? '\u00A0\u00A0\u00A0\u00A0'.repeat(level) + '↳ ' : '';
-                        result.push({ value: node.name, label: prefix + node.name });
+                        const hasChildren = node.children && node.children.length > 0;
 
-                        if (node.children.length > 0) {
+                        result.push({
+                            value: node.name,
+                            label: prefix + node.name,
+                            disabled: hasChildren
+                        });
+
+                        if (hasChildren) {
                             result = result.concat(flatten(node.children, level + 1));
                         }
                     });
@@ -505,7 +511,7 @@ export default function EmployeeForm() {
                         <CustomSelect
                             options={[
                                 { value: '', label: 'اختر القسم' },
-                                ...departments.map(dept => ({ value: dept.name, label: dept.name }))
+                                ...departments
                             ]}
                             value={formData.department}
                             onChange={(val) => setFormData(prev => ({ ...prev, department: val }))}
