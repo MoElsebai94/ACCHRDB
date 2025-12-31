@@ -4,7 +4,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import logo from '../assets/logo.png';
 
-export default function VacationReportModal({ isOpen, onClose, employees }) {
+export default function VacationReportModal({ isOpen, onClose, employees, departments }) {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
@@ -74,6 +74,17 @@ export default function VacationReportModal({ isOpen, onClose, employees }) {
     // This is a simplified projection: Current OnSite - Leaving + Returning
     // Note: This assumes "Leaving" are currently OnSite and "Returning" are currently Away.
     const projectedOnSite = currentOnSite - leavingEmployees.length + returningEmployees.length;
+
+    // Helper to get full hierarchy name
+    const getFullDeptName = (deptName) => {
+        if (!deptName || !departments) return deptName;
+        const dept = departments.find(d => d.name === deptName);
+        if (dept && dept.parentId) {
+            const parent = departments.find(p => p.id === dept.parentId);
+            if (parent) return `${parent.name} / ${dept.name}`;
+        }
+        return deptName;
+    };
 
     return (
         <div style={{
@@ -164,7 +175,7 @@ export default function VacationReportModal({ isOpen, onClose, employees }) {
                     {/* Dashboard Cards */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '5mm', marginBottom: '10mm' }}>
                         <div style={{ background: '#f8fafc', padding: '5mm', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-                            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '2mm' }}>القوة الحالية (بالموقع)</div>
+                            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '2mm' }}>القوة الحالية (بالشركة)</div>
                             <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a' }}>{currentOnSite}</div>
                         </div>
                         <div style={{ background: '#fff7ed', padding: '5mm', borderRadius: '8px', border: '1px solid #ffedd5', textAlign: 'center' }}>
@@ -205,7 +216,9 @@ export default function VacationReportModal({ isOpen, onClose, employees }) {
                                         <tr key={index} style={{ background: index % 2 === 0 ? 'white' : '#fffaf0' }}>
                                             <td style={{ padding: '3mm', border: '1px solid #fed7aa' }}>{emp.firstName} {emp.lastName}</td>
                                             <td style={{ padding: '3mm', border: '1px solid #fed7aa' }}>{emp.position}</td>
-                                            <td style={{ padding: '3mm', border: '1px solid #fed7aa' }}>{emp.department}</td>
+                                            <td style={{ padding: '3mm', border: '1px solid #fed7aa' }}>
+                                                {getFullDeptName(emp.department)}
+                                            </td>
                                             <td style={{ padding: '3mm', textAlign: 'center', border: '1px solid #fed7aa' }}>{emp.airline || '-'}</td>
                                             <td style={{ padding: '3mm', textAlign: 'center', border: '1px solid #fed7aa', fontWeight: 'bold' }}>{emp.vacationStartDate}</td>
                                         </tr>
@@ -232,6 +245,7 @@ export default function VacationReportModal({ isOpen, onClose, employees }) {
                                         <th style={{ padding: '3mm', textAlign: 'right', border: '1px solid #bbf7d0', letterSpacing: 'normal' }}>الاسم</th>
                                         <th style={{ padding: '3mm', textAlign: 'right', border: '1px solid #bbf7d0', letterSpacing: 'normal' }}>الوظيفة</th>
                                         <th style={{ padding: '3mm', textAlign: 'right', border: '1px solid #bbf7d0', letterSpacing: 'normal' }}>القسم</th>
+                                        <th style={{ padding: '3mm', textAlign: 'center', border: '1px solid #bbf7d0', letterSpacing: 'normal' }}>خط الطيران</th>
                                         <th style={{ padding: '3mm', textAlign: 'center', border: '1px solid #bbf7d0', letterSpacing: 'normal' }}>تاريخ العودة</th>
                                     </tr>
                                 </thead>
@@ -240,7 +254,10 @@ export default function VacationReportModal({ isOpen, onClose, employees }) {
                                         <tr key={index} style={{ background: index % 2 === 0 ? 'white' : '#f0fdf4' }}>
                                             <td style={{ padding: '3mm', border: '1px solid #bbf7d0' }}>{emp.firstName} {emp.lastName}</td>
                                             <td style={{ padding: '3mm', border: '1px solid #bbf7d0' }}>{emp.position}</td>
-                                            <td style={{ padding: '3mm', border: '1px solid #bbf7d0' }}>{emp.department}</td>
+                                            <td style={{ padding: '3mm', border: '1px solid #bbf7d0' }}>
+                                                {getFullDeptName(emp.department)}
+                                            </td>
+                                            <td style={{ padding: '3mm', textAlign: 'center', border: '1px solid #bbf7d0' }}>{emp.airline || '-'}</td>
                                             <td style={{ padding: '3mm', textAlign: 'center', border: '1px solid #bbf7d0', fontWeight: 'bold' }}>{emp.vacationReturnDate}</td>
                                         </tr>
                                     ))}

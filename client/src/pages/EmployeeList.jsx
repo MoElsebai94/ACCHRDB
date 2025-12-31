@@ -824,6 +824,7 @@ export default function EmployeeList() {
                 isOpen={showReportModal}
                 onClose={() => setShowReportModal(false)}
                 employees={sortedEmployees}
+                departments={departments}
             />
         </div >
     );
