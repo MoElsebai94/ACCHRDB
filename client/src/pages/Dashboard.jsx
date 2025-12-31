@@ -102,12 +102,6 @@ export default function Dashboard() {
                     </p>
                 </div>
                 <div className="card">
-                    <h3 style={{ fontSize: '1.1rem' }}>الأقسام</h3>
-                    <p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--accent-color)', fontFamily: 'sans-serif' }}>
-                        {stats.departments}
-                    </p>
-                </div>
-                <div className="card">
                     <h3 style={{ fontSize: '1.1rem' }}>الرواتب الشهرية</h3>
                     <p style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--success-color)', fontFamily: 'sans-serif' }}>
                         ${stats.monthlySalary.toLocaleString()}

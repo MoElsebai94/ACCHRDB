@@ -23,6 +23,10 @@ const Vacation = sequelize.define('Vacation', {
         type: DataTypes.STRING, // 'Regular', 'Deduction', 'Emergency', etc.
         allowNull: true
     },
+    travelDate: {
+        type: DataTypes.DATEONLY,
+        allowNull: true
+    },
     duration: {
         type: DataTypes.INTEGER, // Number of days
         allowNull: true

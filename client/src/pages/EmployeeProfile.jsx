@@ -737,7 +737,8 @@ export default function EmployeeProfile() {
                                 endDate: vacationData.returnDate,
                                 returnDate: vacationData.returnDate,
                                 type: vacationData.type,
-                                duration: vacationData.duration
+                                duration: vacationData.duration,
+                                travelDate: vacationData.travelDate
                             })
                         });
 
@@ -751,7 +752,8 @@ export default function EmployeeProfile() {
                                 vacationStartDate: vacationData.startDate,
                                 arrivalDate: vacationData.returnDate,
                                 airline: vacationData.airline,
-                                arrivalDateBeforeVacation: employee.arrivalDateBeforeVacation || employee.arrivalDate
+                                arrivalDateBeforeVacation: employee.arrivalDateBeforeVacation || employee.arrivalDate,
+                                travelDate: vacationData.travelDate
                             })
                         });
                         if (response.ok) {
@@ -779,7 +781,8 @@ export default function EmployeeProfile() {
                                 vacationStartDate: null,
                                 airline: null,
                                 arrivalDate: employee.arrivalDateBeforeVacation || employee.arrivalDate,
-                                arrivalDateBeforeVacation: null
+                                arrivalDateBeforeVacation: null,
+                                travelDate: null
                             })
                         });
                         if (response.ok) {

@@ -221,8 +221,9 @@ export default function BuildingDetail() {
                                 const perm = room.permanentResident;
                                 const temp = room.temporaryResident;
                                 const today = new Date().toISOString().split('T')[0];
-                                const onVacation = perm && perm.vacationReturnDate && (!perm.vacationStartDate || today >= perm.vacationStartDate);
-                                const futureVacation = perm && perm.vacationReturnDate && perm.vacationStartDate && today < perm.vacationStartDate;
+                                const effectiveVacationStart = perm?.travelDate || perm?.vacationStartDate;
+                                const onVacation = perm && perm.vacationReturnDate && effectiveVacationStart && today >= effectiveVacationStart;
+                                const futureVacation = perm && perm.vacationReturnDate && effectiveVacationStart && today < effectiveVacationStart;
 
                                 return (
                                     <div key={room.id} className="room-item">
@@ -261,7 +262,7 @@ export default function BuildingDetail() {
                                                             {futureVacation && (
                                                                 <div className="vacation-badge future">
                                                                     <Calendar size={12} />
-                                                                    <span>سفر: {perm.vacationStartDate}</span>
+                                                                    <span>سفر: {perm.travelDate || perm.vacationStartDate}</span>
                                                                 </div>
                                                             )}
                                                         </div>

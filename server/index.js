@@ -995,7 +995,8 @@ const runMigrations = async () => {
             'gradeDate',
             'currentJobTitleDate',
             'airline',
-            'arrivalDateBeforeVacation'
+            'arrivalDateBeforeVacation',
+            'travelDate'
         ];
 
         for (const colName of columnsToCheck) {
@@ -1009,6 +1010,14 @@ const runMigrations = async () => {
             }
         }
         console.log('Schema check: Employee columns verified.');
+
+        // Migration for Vacations table
+        const [vacResults] = await sequelize.query("PRAGMA table_info(Vacations);");
+        const existingVacColumns = vacResults.map(col => col.name);
+        if (!existingVacColumns.includes('travelDate')) {
+            console.log("Migrating: Adding 'travelDate' to Vacations...");
+            await sequelize.query("ALTER TABLE Vacations ADD COLUMN travelDate VARCHAR(255);");
+        }
 
         // Standard sync for other tables (safe, doesn't alter existing columns)
         await sequelize.sync();

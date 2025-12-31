@@ -140,7 +140,8 @@ export default function VacationModal({ isOpen, onClose, onConfirm, onDelete, em
                 regularEndDateStr: rEnd.toISOString().split('T')[0],
                 deductionStartDateStr: '',
                 deductionEndDateStr: '',
-                vacationStartDateStr
+                vacationStartDateStr,
+                travelDate: travelDate // Pass the actual travel date
             };
         }
 
@@ -183,10 +184,10 @@ export default function VacationModal({ isOpen, onClose, onConfirm, onDelete, em
             regularEndDateStr = globalEndDateStr;
         }
 
-        return { regular, deduction, total: totalDuration, regularEndDateStr, deductionStartDateStr, deductionEndDateStr, vacationStartDateStr };
+        return { regular, deduction, total: totalDuration, regularEndDateStr, deductionStartDateStr, deductionEndDateStr, vacationStartDateStr, travelDate };
     };
 
-    const { regular, deduction, total, regularEndDateStr, deductionStartDateStr, deductionEndDateStr, vacationStartDateStr } = calculateVacations();
+    const { regular, deduction, total, regularEndDateStr, deductionStartDateStr, deductionEndDateStr, vacationStartDateStr, travelDate: calculatedTravelDate } = calculateVacations();
     const vacationStartDisplay = vacationStartDateStr;
 
     const formatDate = (dateStr) => dateStr ? dateStr.replace(/-/g, '/') : '...';
@@ -487,7 +488,7 @@ export default function VacationModal({ isOpen, onClose, onConfirm, onDelete, em
                                 <td style={{ border: '1px solid #000', padding: '10px', fontSize: '16px', textAlign: 'center', direction: 'rtl', unicodeBidi: 'embed', letterSpacing: 'normal' }}>
                                     {regular > 0 ? regular : '...'}
                                 </td>
-                                <td style={{ border: '1px solid #000', padding: '10px', fontSize: '16px', textAlign: 'center', direction: 'rtl', unicodeBidi: 'embed', letterSpacing: 'normal' }}>{formatDate(vacationStartDateStr)}</td>
+                                <td style={{ border: '1px solid #000', padding: '10px', fontSize: '16px', textAlign: 'center', direction: 'rtl', unicodeBidi: 'embed', letterSpacing: 'normal' }}>{formatDate(travelDate)}</td>
                                 <td style={{ border: '1px solid #000', padding: '10px', fontSize: '16px', textAlign: 'center', direction: 'rtl', unicodeBidi: 'embed', letterSpacing: 'normal' }}>{formatDate(regularEndDateStr)}</td>
                             </tr>
                             {deduction > 0 && (

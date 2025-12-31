@@ -98,7 +98,8 @@ export default function Residences() {
                 // Active Vacation Check
                 const empVacations = vacations.filter(v => v.employeeId === emp.id);
                 for (const v of empVacations) {
-                    if (currentStr >= v.startDate && currentStr < v.returnDate) {
+                    const effectivelyStarted = v.travelDate || v.startDate;
+                    if (currentStr >= effectivelyStarted && currentStr < v.returnDate) {
                         return 'V';
                     }
                 }

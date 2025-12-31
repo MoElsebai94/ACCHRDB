@@ -48,9 +48,15 @@ export default function VacationReportModal({ isOpen, onClose, employees, depart
 
     // Filter Logic
     const leavingEmployees = employees.filter(emp => {
-        if (!emp.isActive || !emp.vacationStartDate) return false;
-        return emp.vacationStartDate >= startDate && emp.vacationStartDate <= endDate;
-    }).sort((a, b) => new Date(a.vacationStartDate) - new Date(b.vacationStartDate));
+        if (!emp.isActive) return false;
+        const tDate = emp.travelDate || emp.vacationStartDate;
+        if (!tDate) return false;
+        return tDate >= startDate && tDate <= endDate;
+    }).sort((a, b) => {
+        const dateA = a.travelDate || a.vacationStartDate;
+        const dateB = b.travelDate || b.vacationStartDate;
+        return new Date(dateA) - new Date(dateB);
+    });
 
     const returningEmployees = employees.filter(emp => {
         // Can be active or inactive (usually active but marked as away), we just care about the date
@@ -65,7 +71,7 @@ export default function VacationReportModal({ isOpen, onClose, employees, depart
     const currentlyAwayCount = employees.filter(e =>
         e.isActive &&
         e.vacationReturnDate &&
-        (!e.vacationStartDate || today >= e.vacationStartDate)
+        today >= (e.travelDate || e.vacationStartDate)
     ).length;
 
     const currentOnSite = totalActiveEmployees - currentlyAwayCount;
@@ -220,7 +226,7 @@ export default function VacationReportModal({ isOpen, onClose, employees, depart
                                                 {getFullDeptName(emp.department)}
                                             </td>
                                             <td style={{ padding: '3mm', textAlign: 'center', border: '1px solid #fed7aa' }}>{emp.airline || '-'}</td>
-                                            <td style={{ padding: '3mm', textAlign: 'center', border: '1px solid #fed7aa', fontWeight: 'bold' }}>{emp.vacationStartDate}</td>
+                                            <td style={{ padding: '3mm', textAlign: 'center', border: '1px solid #fed7aa', fontWeight: 'bold' }}>{emp.travelDate || emp.vacationStartDate}</td>
                                         </tr>
                                     ))}
                                 </tbody>
