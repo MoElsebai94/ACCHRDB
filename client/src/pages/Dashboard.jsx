@@ -43,31 +43,39 @@ export default function Dashboard() {
                 const employees = await empRes.json();
                 const departments = await deptRes.json();
 
-                const activeEmployees = employees.filter(emp => emp.isActive);
-                const totalSalary = activeEmployees.reduce((acc, curr) => acc + (parseFloat(curr.salary) || 0), 0);
+                if (Array.isArray(employees) && Array.isArray(departments)) {
+                    const activeEmployees = employees.filter(emp => emp.isActive);
+                    const totalSalary = activeEmployees.reduce((acc, curr) => acc + (parseFloat(curr.salary) || 0), 0);
 
-                setStats({
-                    totalEmployees: activeEmployees.length,
-                    departments: departments.length,
-                    monthlySalary: totalSalary
-                });
-                setEmployeesList(activeEmployees);
-                setDepartmentsList(departments);
+                    setStats({
+                        totalEmployees: activeEmployees.length,
+                        departments: departments.length,
+                        monthlySalary: totalSalary
+                    });
+                    setEmployeesList(activeEmployees);
+                    setDepartmentsList(departments);
+                }
             }
 
             if (expRes.ok) {
                 const expiring = await expRes.json();
-                setExpiringContracts(expiring);
+                if (Array.isArray(expiring)) {
+                    setExpiringContracts(expiring);
+                }
             }
 
             if (stayRes.ok) {
                 const stay = await stayRes.json();
-                setStayAlerts(stay);
+                if (Array.isArray(stay)) {
+                    setStayAlerts(stay);
+                }
             }
 
             if (vacRes.ok) {
                 const vacation = await vacRes.json();
-                setVacationAlerts(vacation);
+                if (Array.isArray(vacation)) {
+                    setVacationAlerts(vacation);
+                }
             }
 
             if (resStats.ok) {
@@ -122,7 +130,7 @@ export default function Dashboard() {
             <DashboardCharts employees={employeesList} departments={departmentsList} />
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem', marginTop: '1.5rem' }}>
-                {expiringContracts.length > 0 && (
+                {Array.isArray(expiringContracts) && expiringContracts.length > 0 && (
                     <div className="card" style={{ borderRight: '4px solid #ef4444' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: '#ef4444' }}>
                             <AlertTriangle size={24} />
@@ -162,7 +170,7 @@ export default function Dashboard() {
                 )}
             </div>
 
-            {stayAlerts.length > 0 && (
+            {Array.isArray(stayAlerts) && stayAlerts.length > 0 && (
                 <div className="card" style={{ borderRight: '4px solid #f59e0b', marginTop: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: '#f59e0b' }}>
                         <Clock size={24} />
@@ -213,7 +221,7 @@ export default function Dashboard() {
             }
 
             {
-                vacationAlerts.length > 0 && (
+                Array.isArray(vacationAlerts) && vacationAlerts.length > 0 && (
                     <div className="card" style={{ borderRight: '4px solid #3b82f6', marginTop: '1.5rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: '#3b82f6' }}>
                             <Calendar size={24} />

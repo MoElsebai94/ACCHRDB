@@ -96,7 +96,9 @@ const Document = require('./models/Document');
 const Building = require('./models/Building');
 const Apartment = require('./models/Apartment');
 const Room = require('./models/Room');
+
 const LoanHistory = require('./models/LoanHistory');
+const Vacation = require('./models/Vacation');
 
 // Define Associations
 Department.hasMany(Department, { as: 'children', foreignKey: 'parentId' });
@@ -118,7 +120,11 @@ Employee.hasMany(LoanHistory, { as: 'loanHistory', foreignKey: 'employeeId', onD
 LoanHistory.belongsTo(Employee, { foreignKey: 'employeeId' });
 
 Employee.hasMany(Document, { as: 'documents', foreignKey: 'employeeId', onDelete: 'CASCADE' });
+
 Document.belongsTo(Employee, { foreignKey: 'employeeId' });
+
+Employee.hasMany(Vacation, { as: 'vacations', foreignKey: 'employeeId', onDelete: 'CASCADE' });
+Vacation.belongsTo(Employee, { foreignKey: 'employeeId' });
 
 // Health check for diagnostics
 app.get('/api/health', (req, res) => {
@@ -198,6 +204,43 @@ app.post('/api/cost-centers', async (req, res) => {
     }
 });
 
+
+// --- Vacations ---
+app.get('/api/vacations', async (req, res) => {
+    try {
+        const { employeeId, start, end } = req.query;
+        const where = {};
+        if (employeeId) where.employeeId = employeeId;
+
+        // Optional date filtering logic could go here
+
+        const vacations = await Vacation.findAll({
+            where,
+            include: [{ model: Employee, attributes: ['firstName', 'lastName'] }],
+            order: [['startDate', 'DESC']]
+        });
+        res.json(vacations);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/vacations', async (req, res) => {
+    try {
+        const vacation = await Vacation.create(req.body);
+
+        // Also update the employee's current status if needed
+        // For now, we trust the frontend to update the employee record separately via PUT /api/employees/:id
+        // OR we could do it here automatically. Let's keep it separate for now or do it here?
+        // User wants integration. 
+        // Better: When a vacation is created, we assume the employee is ON vacation or scheduled.
+        // But for simplicity, we just store the record. The Report will read this table.
+
+        res.status(201).json(vacation);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
 app.delete('/api/cost-centers/:id', async (req, res) => {
     try {
         const result = await CostCenter.destroy({ where: { id: req.params.id } });
@@ -929,6 +972,40 @@ const runMigrations = async () => {
         } else {
             console.log('Schema check: Departments.parentId exists.');
         }
+
+        // Migration: Comprehensive check for potentially missing Employee columns
+        const [empResults] = await sequelize.query("PRAGMA table_info(Employees);");
+        const existingColumns = empResults.map(col => col.name);
+
+        const columnsToCheck = [
+            'departmentBeforeLoan',
+            'currentWorkLocation',
+            'cairoPhone',
+            'cameroonPhone',
+            'address',
+            'efficiencyReport',
+            'photoUrl',
+            'loanStartDate',
+            'loanEndDate',
+            'qualification',
+            'qualificationDate',
+            'maritalStatus',
+            'grade',
+            'gradeDate',
+            'currentJobTitleDate'
+        ];
+
+        for (const colName of columnsToCheck) {
+            if (!existingColumns.includes(colName)) {
+                console.log(`Migrating: Adding missing column '${colName}' to Employees...`);
+                // Use generic VARCHAR/TEXT for flexibility or DATE where appropriate, 
+                // but for SQLite simple adds, VARCHAR/TEXT is safest for strings/dates.
+                // Using general type VARCHAR(255) covering strings and ISO dates.
+                await sequelize.query(`ALTER TABLE Employees ADD COLUMN ${colName} VARCHAR(255);`);
+                console.log(`Migration successful: '${colName}' added.`);
+            }
+        }
+        console.log('Schema check: Employee columns verified.');
 
         // Standard sync for other tables (safe, doesn't alter existing columns)
         await sequelize.sync();

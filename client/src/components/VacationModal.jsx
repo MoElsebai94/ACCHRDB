@@ -55,7 +55,15 @@ export default function VacationModal({ isOpen, onClose, onConfirm, employee }) 
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onConfirm(returnDate);
+        const vacationData = calculateVacations();
+        onConfirm({
+            returnDate,
+            travelDate,
+            startDate: vacationData.vacationStartDateStr, // Official Start Date (after travel)
+            endDate: vacationData.regularEndDateStr || vacationData.deductionEndDateStr || returnDate, // Approximate end
+            type: vacationData.deduction > 0 ? 'Deduction' : 'Regular', // Simple type for now
+            duration: vacationData.total
+        });
         setReturnDate(''); // Reset after submit
     };
 

@@ -236,7 +236,8 @@ export default function EmployeeList() {
             const response = await fetch(`${API_URL}/employees`);
             if (response.ok) {
                 const data = await response.json();
-                setEmployees(data);
+                if (Array.isArray(data)) setEmployees(data);
+                else setEmployees([]);
             }
         } catch (error) {
             console.error('Error fetching employees:', error);
@@ -250,7 +251,8 @@ export default function EmployeeList() {
             const response = await fetch(`${API_URL}/departments`);
             if (response.ok) {
                 const data = await response.json();
-                setDepartments(data);
+                if (Array.isArray(data)) setDepartments(data);
+                else setDepartments([]);
             }
         } catch (error) {
             console.error('Error fetching departments:', error);
@@ -262,7 +264,8 @@ export default function EmployeeList() {
             const response = await fetch(`${API_URL}/cost-centers`);
             if (response.ok) {
                 const data = await response.json();
-                setCostCenters(data);
+                if (Array.isArray(data)) setCostCenters(data);
+                else setCostCenters([]);
             }
         } catch (error) {
             console.error('Error fetching cost centers:', error);
@@ -274,7 +277,8 @@ export default function EmployeeList() {
             const response = await fetch(`${API_URL}/residences/buildings`);
             if (response.ok) {
                 const data = await response.json();
-                setBuildings(data);
+                if (Array.isArray(data)) setBuildings(data);
+                else setBuildings([]);
             }
         } catch (error) {
             console.error('Error fetching buildings:', error);

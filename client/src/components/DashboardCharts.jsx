@@ -11,19 +11,23 @@ import {
 } from 'recharts';
 
 export default function DashboardCharts({ employees = [], departments = [] }) {
+    // Ensure arrays
+    const safeEmployees = Array.isArray(employees) ? employees : [];
+    const safeDepartments = Array.isArray(departments) ? departments : [];
+
     // Helper: Map every department name to its ROOT parent name
     const deptRootMap = useMemo(() => {
         const map = {}; // ID -> Dept
         const nameToId = {}; // Name -> ID
 
-        departments.forEach(d => {
+        safeDepartments.forEach(d => {
             map[d.id] = d;
             nameToId[d.name] = d.id;
         });
 
         const rootMap = {}; // Name -> Root Name
 
-        departments.forEach(d => {
+        safeDepartments.forEach(d => {
             let current = d;
             while (current.parentId && map[current.parentId]) {
                 current = map[current.parentId];
@@ -37,7 +41,7 @@ export default function DashboardCharts({ employees = [], departments = [] }) {
     // 1. Calculate Employees Per Department (Aggregated by Root)
     const empPerDept = useMemo(() => {
         const counts = {};
-        employees.forEach(emp => {
+        safeEmployees.forEach(emp => {
             const rowDept = emp.department || 'غير محدد';
             // Resolve to root or keep as is if not found
             const rootDept = deptRootMap[rowDept] || rowDept;
@@ -47,12 +51,12 @@ export default function DashboardCharts({ employees = [], departments = [] }) {
         return Object.entries(counts)
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
-    }, [employees, deptRootMap]);
+    }, [safeEmployees, deptRootMap]);
 
     // 2. Calculate Salary Per Department (Aggregated by Root)
     const salaryPerDept = useMemo(() => {
         const salaries = {};
-        employees.forEach(emp => {
+        safeEmployees.forEach(emp => {
             const rowDept = emp.department || 'غير محدد';
             const rootDept = deptRootMap[rowDept] || rowDept;
             const salary = parseFloat(emp.salary) || 0;
@@ -67,7 +71,7 @@ export default function DashboardCharts({ employees = [], departments = [] }) {
     // 3. Calculate Employees Per Cost Center
     const empPerCostCenter = useMemo(() => {
         const counts = {};
-        employees.forEach(emp => {
+        safeEmployees.forEach(emp => {
             const cc = emp.costCenter || 'غير محدد';
             counts[cc] = (counts[cc] || 0) + 1;
         });
@@ -79,7 +83,7 @@ export default function DashboardCharts({ employees = [], departments = [] }) {
     // 4. Calculate Salary Per Cost Center
     const salaryPerCostCenter = useMemo(() => {
         const salaries = {};
-        employees.forEach(emp => {
+        safeEmployees.forEach(emp => {
             const cc = emp.costCenter || 'غير محدد';
             const salary = parseFloat(emp.salary) || 0;
             salaries[cc] = (salaries[cc] || 0) + salary;
@@ -87,9 +91,9 @@ export default function DashboardCharts({ employees = [], departments = [] }) {
         return Object.entries(salaries)
             .map(([name, total]) => ({ name, total }))
             .sort((a, b) => b.total - a.total);
-    }, [employees]);
+    }, [safeEmployees]);
 
-    if (employees.length === 0) return null;
+    if (safeEmployees.length === 0) return null;
 
     // Helper to render a custom HTML bar chart
     const renderCustomChart = (data, valueKey, color, formatter = (val) => val) => {

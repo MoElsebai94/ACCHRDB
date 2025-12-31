@@ -19,7 +19,8 @@ export default function CostCenterList() {
             const response = await fetch(`${API_URL}/cost-centers`);
             if (response.ok) {
                 const data = await response.json();
-                setCostCenters(data);
+                if (Array.isArray(data)) setCostCenters(data);
+                else setCostCenters([]);
             }
         } catch (error) {
             console.error('Error fetching cost centers:', error);

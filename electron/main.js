@@ -170,7 +170,13 @@ function startServer() {
                 log('Server requested restart (Restore operation). Restarting...');
                 startServer(); // Restart server
             } else if (code !== 0 && code !== null) {
-                dialog.showErrorBox('Server Crashed', `Backend server exited with code ${code}. Check logs at: ${logPath}`);
+                // If exit code 1, it might be port conflict
+                dialog.showErrorBox('Server Start Failed',
+                    `The backend server failed to start (Code ${code}).\n\n` +
+                    `Common Cause: Another instance of the app (or terminal) is already running on Port 3001.\n\n` +
+                    `Please close all other windows/terminals and try again.\n` +
+                    `Check logs at: ${logPath}`
+                );
             }
         });
     } catch (err) {

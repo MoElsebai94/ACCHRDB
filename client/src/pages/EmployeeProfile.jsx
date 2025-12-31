@@ -714,15 +714,30 @@ export default function EmployeeProfile() {
                 isOpen={isVacationModalOpen}
                 onClose={() => setIsVacationModalOpen(false)}
                 employee={employee}
-                onConfirm={async (date) => {
+                onConfirm={async (vacationData) => {
                     try {
+                        // 1. Create Vacation Record (History)
+                        await fetch(`${API_URL}/vacations`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                employeeId: id,
+                                startDate: vacationData.startDate,
+                                endDate: vacationData.returnDate, // Using Return Date as the end of the "Away" period visually
+                                returnDate: vacationData.returnDate,
+                                type: vacationData.type,
+                                duration: vacationData.duration
+                            })
+                        });
+
+                        // 2. Update Employee Status
                         const response = await fetch(`${API_URL}/employees/${id}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 ...employee,
-                                vacationReturnDate: date,
-                                arrivalDate: date // Automatically set Arrival Date to Vacation Return Date
+                                vacationReturnDate: vacationData.returnDate,
+                                arrivalDate: vacationData.returnDate // Automatically set Arrival Date to Vacation Return Date
                             })
                         });
                         if (response.ok) {

@@ -110,7 +110,7 @@ export default function NotificationDropdown() {
                         ) : notifications.length === 0 ? (
                             <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>لا توجد تنبيهات جديدة</div>
                         ) : (
-                            notifications.map((note) => {
+                            Array.isArray(notifications) && notifications.map((note) => {
                                 const colors = getColors(note.severity);
                                 return (
                                     <Link
