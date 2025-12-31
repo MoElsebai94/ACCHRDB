@@ -315,25 +315,119 @@ export default function Residences() {
 
             {
                 showAddModal && (
-                    <div className="modal-overlay">
-                        <div className="modal-content" style={{ maxWidth: '400px' }}>
-                            <div className="modal-header">
-                                <h2>إضافة استراحة جديدة</h2>
+                    <div style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        zIndex: 9999, // Ensure it's on top
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backdropFilter: 'blur(4px)'
+                    }}>
+                        <div style={{
+                            background: 'white',
+                            width: '100%',
+                            maxWidth: '500px',
+                            borderRadius: '16px',
+                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                            overflow: 'hidden'
+                        }}>
+                            {/* Modal Header */}
+                            <div style={{
+                                padding: '24px',
+                                borderBottom: '1px solid #f1f5f9',
+                                background: '#f8fafc'
+                            }}>
+                                <h2 style={{
+                                    margin: 0,
+                                    fontSize: '1.25rem',
+                                    fontWeight: '700',
+                                    color: '#0f172a'
+                                }}>إضافة استراحة جديدة</h2>
                             </div>
+
                             <form onSubmit={handleAddBuilding}>
-                                <div className="form-group">
-                                    <label>اسم الاستراحة</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={newBuildingName}
-                                        onChange={(e) => setNewBuildingName(e.target.value)}
-                                        placeholder="مثلاً: سكن المهندسين"
-                                    />
+                                {/* Modal Body */}
+                                <div style={{ padding: '24px' }}>
+                                    <div className="form-group">
+                                        <label style={{
+                                            display: 'block',
+                                            fontSize: '0.875rem',
+                                            fontWeight: '600',
+                                            color: '#475569',
+                                            marginBottom: '8px'
+                                        }}>اسم الاستراحة</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={newBuildingName}
+                                            onChange={(e) => setNewBuildingName(e.target.value)}
+                                            placeholder="مثلاً: سكن المهندسين"
+                                            style={{
+                                                width: '100%',
+                                                padding: '12px 16px',
+                                                borderRadius: '8px',
+                                                border: '1px solid #cbd5e1',
+                                                fontSize: '1rem',
+                                                outline: 'none',
+                                                transition: 'all 0.2s',
+                                                color: '#1e293b'
+                                            }}
+                                            onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                                            onBlur={(e) => e.target.style.borderColor = '#cbd5e1'}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="modal-footer" style={{ marginTop: '1.5rem' }}>
-                                    <button type="button" className="btn-secondary" onClick={() => setShowAddModal(false)}>إلغاء</button>
-                                    <button type="submit" className="btn-primary">حفظ</button>
+
+                                {/* Modal Footer */}
+                                <div style={{
+                                    padding: '20px 24px',
+                                    background: '#f8fafc',
+                                    borderTop: '1px solid #f1f5f9',
+                                    display: 'flex',
+                                    justifyContent: 'flex-end',
+                                    gap: '12px'
+                                }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddModal(false)}
+                                        style={{
+                                            padding: '10px 20px',
+                                            borderRadius: '8px',
+                                            border: '1px solid #e2e8f0',
+                                            background: 'white',
+                                            color: '#64748b',
+                                            fontWeight: '600',
+                                            cursor: 'pointer',
+                                            fontSize: '0.875rem'
+                                        }}
+                                        onMouseOver={(e) => e.target.style.background = '#f1f5f9'}
+                                        onMouseOut={(e) => e.target.style.background = 'white'}
+                                    >
+                                        إلغاء
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        style={{
+                                            padding: '10px 24px',
+                                            borderRadius: '8px',
+                                            border: 'none',
+                                            background: '#3b82f6',
+                                            color: 'white',
+                                            fontWeight: '600',
+                                            cursor: 'pointer',
+                                            fontSize: '0.875rem',
+                                            boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)'
+                                        }}
+                                        onMouseOver={(e) => e.target.style.background = '#2563eb'}
+                                        onMouseOut={(e) => e.target.style.background = '#3b82f6'}
+                                    >
+                                        حفظ الاستراحة
+                                    </button>
                                 </div>
                             </form>
                         </div>
