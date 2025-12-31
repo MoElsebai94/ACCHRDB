@@ -45,7 +45,9 @@ export default function EmployeeForm() {
     const [previewUrl, setPreviewUrl] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
 
-    const [departments, setDepartments] = useState([]);
+    const [departmentOptions, setDepartmentOptions] = useState([]);
+    const [rawDepartments, setRawDepartments] = useState([]);
+    const [allEmployees, setAllEmployees] = useState([]);
     const [costCenters, setCostCenters] = useState([]);
 
     useEffect(() => {
@@ -53,8 +55,21 @@ export default function EmployeeForm() {
             fetchEmployee();
         }
         fetchDepartments();
+        fetchAllEmployees();
         fetchCostCenters();
     }, [id]);
+
+    const fetchAllEmployees = async () => {
+        try {
+            const response = await fetch(`${API_URL}/employees`);
+            if (response.ok) {
+                const data = await response.json();
+                setAllEmployees(data);
+            }
+        } catch (error) {
+            console.error('Error fetching employees:', error);
+        }
+    };
 
     const fetchCostCenters = async () => {
         try {
@@ -73,49 +88,105 @@ export default function EmployeeForm() {
             const response = await fetch(`${API_URL}/departments`);
             if (response.ok) {
                 const data = await response.json();
-
-                // Organize hierarchy
-                const map = {};
-                const roots = [];
-                const depts = data.map(d => ({ ...d, children: [] }));
-
-                depts.forEach(d => map[d.id] = d);
-                depts.forEach(d => {
-                    if (d.parentId && map[d.parentId]) {
-                        map[d.parentId].children.push(d);
-                    } else {
-                        roots.push(d);
-                    }
-                });
-
-                // Flatten with visual hierarchy
-                const flatten = (nodes, level = 0) => {
-                    let result = [];
-                    nodes.forEach(node => {
-                        // Create indented label
-                        const prefix = level > 0 ? '\u00A0\u00A0\u00A0\u00A0'.repeat(level) + '↳ ' : '';
-                        const hasChildren = node.children && node.children.length > 0;
-
-                        result.push({
-                            value: node.name,
-                            label: prefix + node.name,
-                            disabled: hasChildren
-                        });
-
-                        if (hasChildren) {
-                            result = result.concat(flatten(node.children, level + 1));
-                        }
-                    });
-                    return result;
-                };
-
-                const options = flatten(roots);
-                setDepartments(options);
+                setRawDepartments(data);
             }
         } catch (error) {
             console.error('Error fetching departments:', error);
         }
     };
+
+    // Calculate Department Options with "Single Active Root" Constraint
+    useEffect(() => {
+        if (rawDepartments.length === 0) return;
+
+        // 1. Identify Occupied Root Departments
+        const occupiedRoots = {}; // Map<DeptName, EmployeeID>
+        allEmployees.forEach(emp => {
+            if (emp.isActive && emp.department) {
+                occupiedRoots[emp.department] = emp.id;
+            }
+        });
+
+        // 2. Build Hierarchy
+        const map = {};
+        const roots = [];
+        const depts = rawDepartments.map(d => ({ ...d, children: [] }));
+
+        depts.forEach(d => map[d.id] = d);
+        depts.forEach(d => {
+            if (d.parentId && d.parentId !== d.id && map[d.parentId]) {
+                map[d.parentId].children.push(d);
+            } else {
+                roots.push(d);
+            }
+        });
+
+        // Hardcode "General Manager" Root if it doesn't exist
+        const hasGM = rawDepartments.some(d => d.name === 'المدير العام');
+        if (!hasGM) {
+            roots.unshift({
+                id: 'hardcoded-gm',
+                name: 'المدير العام',
+                children: []
+            });
+        }
+
+        // 3. Flatten & Apply Constraints
+        const visitedIds = new Set();
+
+        const flatten = (nodes, level = 0) => {
+            let result = [];
+            nodes.forEach(node => {
+                if (visitedIds.has(node.id)) return; // Prevent infinite loops in cycles
+                visitedIds.add(node.id);
+
+                const prefix = level > 0 ? '\u00A0\u00A0\u00A0\u00A0'.repeat(level) + '↳ ' : '';
+                const hasChildren = node.children && node.children.length > 0;
+
+                let label = prefix + node.name;
+                let disabled = false;
+
+                // Constraint: Only 1 person in Root
+                // Note: Cyclic orphans treated as roots (level 0) will also get this check effectively if we pass level=0 for them.
+                if (level === 0) {
+                    const occupierId = occupiedRoots[node.name];
+                    if (occupierId) {
+                        // If occupied by someone else
+                        if (!isEditMode || (isEditMode && String(occupierId) !== String(id))) {
+                            disabled = true;
+                            label += ' (مشغول - Occupied)';
+                        }
+                    }
+                }
+
+                result.push({
+                    value: node.name,
+                    label: label,
+                    disabled: disabled
+                });
+
+                if (hasChildren) {
+                    result = result.concat(flatten(node.children, level + 1));
+                }
+            });
+            return result;
+        };
+
+        let options = flatten(roots);
+
+        // 4. Safety Net: Find Orphaned/Cyclic Departments
+        // These are departments that were NOT reached by traversing from roots (e.g. A->B->A cycle)
+        const unvisited = rawDepartments.filter(d => !visitedIds.has(d.id));
+
+        if (unvisited.length > 0) {
+            // Treat them as pseudo-roots so they appear
+            const orphanedOptions = flatten(unvisited, 0);
+            options = [...options, ...orphanedOptions];
+        }
+
+        setDepartmentOptions(options);
+
+    }, [rawDepartments, allEmployees, id, isEditMode]);
 
     const fetchEmployee = async () => {
         try {
@@ -511,7 +582,7 @@ export default function EmployeeForm() {
                         <CustomSelect
                             options={[
                                 { value: '', label: 'اختر القسم' },
-                                ...departments
+                                ...departmentOptions
                             ]}
                             value={formData.department}
                             onChange={(val) => setFormData(prev => ({ ...prev, department: val }))}
