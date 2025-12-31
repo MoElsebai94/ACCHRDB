@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Trash2, FolderTree, Pencil, X } from 'lucide-react';
+import { Trash2, FolderTree, Pencil, X, FileText } from 'lucide-react';
 import { API_URL } from '../utils/api';
 import ConfirmationModal from '../components/ConfirmationModal';
 import PageLoading from '../components/PageLoading';
 import CustomSelect from '../components/CustomSelect';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+import logo from '../assets/logo.png';
 
 export default function DepartmentList() {
     const [departments, setDepartments] = useState([]);
+    const [employees, setEmployees] = useState([]); // Added for counts
     const [newDept, setNewDept] = useState('');
     const [newDeptParent, setNewDeptParent] = useState('');
     const [editingId, setEditingId] = useState(null); // Track editing state
@@ -15,6 +19,7 @@ export default function DepartmentList() {
 
     useEffect(() => {
         fetchDepartments();
+        fetchEmployees();
     }, []);
 
     const fetchDepartments = async () => {
@@ -28,6 +33,18 @@ export default function DepartmentList() {
             console.error('Error fetching departments:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchEmployees = async () => {
+        try {
+            const response = await fetch(`${API_URL}/employees`);
+            if (response.ok) {
+                const data = await response.json();
+                setEmployees(data);
+            }
+        } catch (error) {
+            console.error('Error fetching employees:', error);
         }
     };
 
@@ -120,6 +137,102 @@ export default function DepartmentList() {
 
     const organizedDepartments = getOrganizedDepartments();
 
+    // --- Report Generation Logic ---
+    const generateStructurePDF = async () => {
+        const element = document.getElementById('structure-report-printable');
+        if (!element) return;
+
+        try {
+            setLoading(true);
+            element.style.display = 'block';
+
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+
+            element.style.display = 'none';
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save('Company_Structure.pdf');
+
+        } catch (error) {
+            console.error('PDF Error:', error);
+            alert('حدث خطأ أثناء إنشاء التقرير');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const calculateEmployeeCount = (deptName) => {
+        if (!deptName) return 0;
+        // Case-insensitive match
+        const target = deptName.toLowerCase().trim();
+        return employees.filter(e => e.department && e.department.toLowerCase().trim() === target && e.isActive).length;
+    };
+
+    // Recursive Tree Renderer for PDF
+    const renderTreeNodes = (nodes) => {
+        return nodes.map(node => (
+            <div key={node.id} style={{ marginBottom: '10px' }}>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 12px',
+                    backgroundColor: node.level === 0 ? '#1e3a8a' : (node.level === 1 ? '#f1f5f9' : 'white'),
+                    color: node.level === 0 ? 'white' : '#1e293b',
+                    border: node.level === 0 ? 'none' : '1px solid #e2e8f0',
+                    borderRight: node.level > 0 ? '4px solid #3b82f6' : 'none',
+                    borderRadius: '6px',
+                    fontWeight: 'bold',
+                    fontSize: '14px'
+                }}>
+                    <span>{node.name}</span>
+                    <span style={{
+                        backgroundColor: node.level === 0 ? 'rgba(255,255,255,0.2)' : '#e2e8f0',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        fontSize: '12px'
+                    }}>
+                        {calculateEmployeeCount(node.name)} موظف
+                    </span>
+                </div>
+                {node.children.length > 0 && (
+                    <div style={{ marginRight: '20px', paddingRight: '10px', borderRight: '1px dashed #cbd5e1', marginTop: '5px' }}>
+                        {renderTreeNodes(node.children)}
+                    </div>
+                )}
+            </div>
+        ));
+    };
+
+    // Inject GM for the report if not present
+    const getReportData = () => {
+        const data = [...organizedDepartments];
+        // Check if GM exists (Arabic or English)
+        const hasGM = data.some(d => d.name === 'المدير العام' || d.name === 'General Manager');
+
+        let reportStructure = data.filter(d => d.level === 0);
+
+        // If we want a strictly "General Manager" at top structure, we can simulate it
+        // Or just return the roots. The user asked for "General Manager" at top.
+
+        if (!hasGM) {
+            // We can artificially render a GM node at the top of the report
+            // But for now, let's just use the roots.
+        }
+        return reportStructure;
+    };
+
+
     // Prepare options for CustomSelect, restricted to max depth for parents
     const parentOptions = [
         { value: '', label: '-- قسم رئيسي --' },
@@ -135,10 +248,19 @@ export default function DepartmentList() {
 
     return (
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <h1 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <FolderTree size={32} color="#3b82f6" />
-                إدارة الأقسام
-            </h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+                    <FolderTree size={32} color="#3b82f6" />
+                    إدارة الأقسام
+                </h1>
+                <button
+                    onClick={generateStructurePDF}
+                    className="btn btn-primary"
+                    style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}
+                >
+                    <FileText size={18} /> هيكل الشركة (PDF)
+                </button>
+            </div>
 
             <div className="card" style={{ marginBottom: '2rem', position: 'relative', zIndex: 20 }}>
                 <form onSubmit={handleAdd} style={{ display: 'flex', gap: '1rem', alignItems: 'end', flexWrap: 'wrap' }}>
@@ -233,6 +355,58 @@ export default function DepartmentList() {
                 title="حذف القسم"
                 message="هل أنت متأكد من حذف هذا القسم؟ قد يؤدي ذلك إلى حذف الأقسام الفرعية المرتبطة به."
             />
+
+            {/* Hidden Printable Report */}
+            <div id="structure-report-printable" style={{ display: 'none', width: '210mm', padding: '15mm', backgroundColor: 'white', direction: 'rtl', fontFamily: 'Cairo, sans-serif' }}>
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '30px', borderBottom: '2px solid #1e3a8a', paddingBottom: '15px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <img src={logo} alt="Logo" style={{ height: '60px' }} />
+                        <div style={{ lineHeight: '1.4' }}>
+                            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e3a8a' }}>المقاولون العرب الكاميرونيه</div>
+                            <div style={{ fontSize: '14px', color: '#64748b' }}>Arab Contractors Cameroun</div>
+                        </div>
+                    </div>
+                    <div style={{ textAlign: 'left', fontSize: '12px', color: '#64748b' }}>
+                        <div>Date: {new Date().toLocaleDateString('en-GB')}</div>
+                        <div>Structure Report</div>
+                    </div>
+                </div>
+
+                {/* Content */}
+                <div style={{ marginBottom: '30px' }}>
+                    {/* Artificial GM Node */}
+                    <div style={{ marginBottom: '10px' }}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '10px 15px',
+                            backgroundColor: '#f59e0b', // Gold for GM
+                            color: 'white',
+                            borderRadius: '8px',
+                            fontWeight: 'bold',
+                            fontSize: '16px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}>
+                            <span>المدير العام (General Manager)</span>
+                            <span style={{ backgroundColor: 'rgba(255,255,255,0.25)', padding: '2px 10px', borderRadius: '12px', fontSize: '14px' }}>
+                                {calculateEmployeeCount('المدير العام') + calculateEmployeeCount('General Manager')} موظف
+                            </span>
+                        </div>
+                        {/* Roots contain the rest */}
+                        <div style={{ marginRight: '20px', paddingRight: '10px', borderRight: '2px dashed #9ca3af', marginTop: '10px' }}>
+                            {renderTreeNodes(getReportData().filter(d => d.name !== 'المدير العام' && d.name !== 'General Manager'))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div style={{ marginTop: 'auto', paddingTop: '15px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b' }}>
+                    <div>إجمالي القوى العاملة: {employees.filter(e => e.isActive).length}</div>
+                    <div>Generated by HR Database System</div>
+                </div>
+            </div>
         </div>
     );
 }

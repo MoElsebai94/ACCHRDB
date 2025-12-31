@@ -146,7 +146,13 @@ export default function EmployeeForm() {
                 let label = prefix + node.name;
                 let disabled = false;
 
-                // Constraint: Only 1 person in Root
+                // Constraint: Parent Departments cannot be selected
+                if (hasChildren) {
+                    disabled = true;
+                    // Optional: You could add a visual indicator to the label if needed, but greyed out is sufficient
+                }
+
+                // Constraint: Only 1 person in Root (if it's a leaf root)
                 // Note: Cyclic orphans treated as roots (level 0) will also get this check effectively if we pass level=0 for them.
                 if (level === 0) {
                     const occupierId = occupiedRoots[node.name];
