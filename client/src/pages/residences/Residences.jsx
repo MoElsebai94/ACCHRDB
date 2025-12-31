@@ -436,7 +436,7 @@ export default function Residences() {
                                     {/* Grand Total Column (Moved to end for RTL Left positioning) */}
                                     <th style={{ padding: '15px 10px', textAlign: 'center', borderBottom: '1px solid #e2e8f0', background: '#e2e8f0', fontWeight: '700', borderLeft: '2px solid #cbd5e1', borderRight: '2px solid #cbd5e1', letterSpacing: '0px', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
                                         الإجمالي اليومي
-                                        <div style={{ fontSize: '10px', fontWeight: 'normal', opacity: 0.8 }}>(مشغول | أجازة)</div>
+                                        <div style={{ fontSize: '10px', fontWeight: 'normal', opacity: 0.8 }}>(حضور | أجازة)</div>
                                     </th>
                                 </tr>
                             </thead>
@@ -496,7 +496,7 @@ export default function Residences() {
                         </table>
 
                         <div style={{ marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8' }}>
-                            <div>تم إنشاء هذا التقرير تلقائياً بواسطة نظام GomaaDB</div>
+                            <div>تم إنشاء هذا التقرير تلقائياً بواسطة نظام إدارة الموارد البشرية</div>
                             <div>{new Date().toLocaleString('en-GB')}</div>
                         </div>
                     </div>
