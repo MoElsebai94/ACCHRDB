@@ -75,10 +75,78 @@ export default function EmployeeList() {
         fetchBuildings();
     }, []);
 
+    // Hierarchical Processing
+    const { deptOptions, deptDescendants } = useMemo(() => {
+        if (!departments.length) return { deptOptions: [], deptDescendants: {} };
+
+        const map = {};
+        const roots = [];
+        const nameToId = {};
+        const idToName = {};
+
+        // 1. Build Tree & Helper Maps
+        departments.forEach(d => {
+            map[d.id] = { ...d, children: [] };
+            nameToId[d.name] = d.id;
+            idToName[d.id] = d.name;
+        });
+
+        departments.forEach(d => {
+            if (d.parentId && map[d.parentId]) {
+                map[d.parentId].children.push(map[d.id]);
+            } else {
+                roots.push(map[d.id]);
+            }
+        });
+
+        // 2. Flatten for Dropdown
+        const flatten = (nodes, level = 0) => {
+            let result = [];
+            nodes.forEach(node => {
+                const prefix = level > 0 ? '\u00A0\u00A0\u00A0\u00A0'.repeat(level) + '↳ ' : '';
+                result.push({ value: node.name, label: prefix + node.name });
+                if (node.children.length > 0) {
+                    result = result.concat(flatten(node.children, level + 1));
+                }
+            });
+            return result;
+        };
+
+        const options = flatten(roots);
+
+        // 3. Build Descendants Map for Filtering
+        const descendants = {};
+
+        const getDescendantNames = (node) => {
+            let names = [node.name];
+            if (node.children) {
+                node.children.forEach(child => {
+                    names = names.concat(getDescendantNames(child));
+                });
+            }
+            return names;
+        };
+
+        Object.values(map).forEach(node => {
+            descendants[node.name] = new Set(getDescendantNames(node));
+        });
+
+        return { deptOptions: options, deptDescendants: descendants };
+
+    }, [departments]);
+
+
     const filteredEmployees = useMemo(() => {
         return employees.filter(emp => {
             const matchesSearch = (emp.firstName + ' ' + emp.lastName).toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesDept = selectedDept ? emp.department === selectedDept : true;
+
+            // Smart Dept Filter: Match selected OR any sub-department
+            let matchesDept = true;
+            if (selectedDept) {
+                const targetSet = deptDescendants[selectedDept];
+                matchesDept = targetSet ? targetSet.has(emp.department) : emp.department === selectedDept;
+            }
+
             const matchesCostCenter = selectedCostCenter ? emp.costCenter === selectedCostCenter : true;
             const matchesPosition = selectedPosition ? emp.jobRole === selectedPosition : true;
 
@@ -92,7 +160,7 @@ export default function EmployeeList() {
             const matchesInactive = showInactive ? true : emp.isActive;
             return matchesSearch && matchesDept && matchesCostCenter && matchesPosition && matchesBuilding && matchesInactive;
         });
-    }, [employees, searchTerm, selectedDept, selectedCostCenter, selectedPosition, selectedBuilding, showInactive]);
+    }, [employees, searchTerm, selectedDept, selectedCostCenter, selectedPosition, selectedBuilding, showInactive, deptDescendants]);
 
     const toggleColumn = (key) => {
         setVisibleColumns(prev => {
@@ -270,7 +338,7 @@ export default function EmployeeList() {
                     <CustomSelect
                         options={[
                             { value: '', label: 'كل الأقسام' },
-                            ...departments.map(dept => ({ value: dept.name, label: dept.name }))
+                            ...deptOptions
                         ]}
                         value={selectedDept}
                         onChange={setSelectedDept}
