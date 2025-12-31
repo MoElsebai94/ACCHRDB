@@ -136,6 +136,10 @@ const Employee = sequelize.define('Employee', {
   photoUrl: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  airline: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 });
 

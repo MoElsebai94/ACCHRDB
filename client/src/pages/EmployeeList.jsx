@@ -1,7 +1,7 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Edit2, Trash2, Plane, Search, Filter, Settings, Check, FileText } from 'lucide-react';
+import { Edit2, Trash2, Plane, Search, Filter, Settings, Check, FileText, Plus, FileDown } from 'lucide-react';
+import VacationReportModal from '../components/VacationReportModal';
 import { API_URL } from '../utils/api';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CustomSelect from '../components/CustomSelect';
@@ -27,6 +27,7 @@ export default function EmployeeList() {
     const [showInactive, setShowInactive] = useState(false);
     const [showColumnMenu, setShowColumnMenu] = useState(false);
     const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', type: 'error' });
+    const [showReportModal, setShowReportModal] = useState(false);
 
     const availableColumns = [
         { key: 'name', label: 'الاسم', alwaysVisible: true },
@@ -364,16 +365,28 @@ export default function EmployeeList() {
     return (
         <div>
             <div className="header" style={{ justifyContent: 'flex-end', gap: '0.75rem' }}>
-                <button
-                    onClick={handleExportEmployeeReport}
-                    className="btn btn-primary"
-                    style={{ gap: '0.5rem', display: 'flex', alignItems: 'center' }}
-                >
-                    <FileText size={18} /> تصدير تقرير (PDF)
-                </button>
-                <Link to="/employees/new" className="btn btn-primary">
-                    + إضافة موظف
-                </Link>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button
+                        className="btn btn-secondary"
+                        onClick={() => setShowReportModal(true)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                        <FileText size={18} />
+                        <span>تقرير تحركات</span>
+                    </button>
+                    <button
+                        className="btn btn-secondary"
+                        onClick={handleExportEmployeeReport}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                        <FileText size={18} />
+                        <span>تصدير تقرير (PDF)</span>
+                    </button>
+                    <Link to="/employees/new" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Plus size={18} />
+                        <span>موظف جديد</span>
+                    </Link>
+                </div>
             </div>
 
             <div className="card" style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', position: 'relative', zIndex: 10 }}>
@@ -807,6 +820,11 @@ export default function EmployeeList() {
                     </div>
                 </div>
             </div>
+            <VacationReportModal
+                isOpen={showReportModal}
+                onClose={() => setShowReportModal(false)}
+                employees={sortedEmployees}
+            />
         </div >
     );
 }

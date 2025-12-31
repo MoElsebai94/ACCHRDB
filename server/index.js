@@ -993,7 +993,8 @@ const runMigrations = async () => {
             'maritalStatus',
             'grade',
             'gradeDate',
-            'currentJobTitleDate'
+            'currentJobTitleDate',
+            'airline'
         ];
 
         for (const colName of columnsToCheck) {

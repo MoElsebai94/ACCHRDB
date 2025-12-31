@@ -62,7 +62,8 @@ export default function VacationModal({ isOpen, onClose, onConfirm, employee }) 
             startDate: vacationData.vacationStartDateStr, // Official Start Date (after travel)
             endDate: vacationData.regularEndDateStr || vacationData.deductionEndDateStr || returnDate, // Approximate end
             type: vacationData.deduction > 0 ? 'Deduction' : 'Regular', // Simple type for now
-            duration: vacationData.total
+            duration: vacationData.total,
+            airline: airline === 'أخرى' ? customAirline : airline
         });
         setReturnDate(''); // Reset after submit
     };

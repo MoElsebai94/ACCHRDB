@@ -749,7 +749,8 @@ export default function EmployeeProfile() {
                                 ...employee,
                                 vacationReturnDate: vacationData.returnDate,
                                 vacationStartDate: vacationData.startDate, // Save the calculated start date
-                                arrivalDate: vacationData.returnDate // Automatically set Arrival Date to Vacation Return Date
+                                arrivalDate: vacationData.returnDate, // Automatically set Arrival Date to Vacation Return Date
+                                airline: vacationData.airline
                             })
                         });
                         if (response.ok) {
