@@ -73,7 +73,38 @@ export default function EmployeeForm() {
             const response = await fetch(`${API_URL}/departments`);
             if (response.ok) {
                 const data = await response.json();
-                setDepartments(data);
+
+                // Organize hierarchy
+                const map = {};
+                const roots = [];
+                const depts = data.map(d => ({ ...d, children: [] }));
+
+                depts.forEach(d => map[d.id] = d);
+                depts.forEach(d => {
+                    if (d.parentId && map[d.parentId]) {
+                        map[d.parentId].children.push(d);
+                    } else {
+                        roots.push(d);
+                    }
+                });
+
+                // Flatten with visual hierarchy
+                const flatten = (nodes, level = 0) => {
+                    let result = [];
+                    nodes.forEach(node => {
+                        // Create indented label
+                        const prefix = level > 0 ? '\u00A0\u00A0\u00A0\u00A0'.repeat(level) + '↳ ' : '';
+                        result.push({ value: node.name, label: prefix + node.name });
+
+                        if (node.children.length > 0) {
+                            result = result.concat(flatten(node.children, level + 1));
+                        }
+                    });
+                    return result;
+                };
+
+                const options = flatten(roots);
+                setDepartments(options);
             }
         } catch (error) {
             console.error('Error fetching departments:', error);

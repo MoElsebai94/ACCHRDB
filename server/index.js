@@ -99,6 +99,9 @@ const Room = require('./models/Room');
 const LoanHistory = require('./models/LoanHistory');
 
 // Define Associations
+Department.hasMany(Department, { as: 'children', foreignKey: 'parentId' });
+Department.belongsTo(Department, { as: 'parent', foreignKey: 'parentId' });
+
 Building.hasMany(Apartment, { as: 'apartments', foreignKey: 'buildingId', onDelete: 'CASCADE' });
 Apartment.belongsTo(Building, { foreignKey: 'buildingId' });
 
@@ -890,31 +893,39 @@ app.delete('/api/employees/:id', async (req, res) => {
 });
 
 // Start server
-console.log('Syncing database...');
-console.log('Syncing database...');
-const startApp = () => {
-    app.listen(PORT, '127.0.0.1', () => {
-        console.log(`Server is running on http://127.0.0.1:${PORT}`);
+// Sync Database and Start Server
+console.log('Starting server...');
+
+const startServer = () => {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
     });
 };
 
-sequelize.sync({ alter: true })
-    .then(() => {
-        console.log('Database sync successful (Alter Mode)');
-        startApp();
-    })
-    .catch(err => {
-        console.error('Database sync (Alter Mode) failed:', err.message);
-        console.log('Falling back to standard sync...');
+const runMigrations = async () => {
+    try {
+        // Manually check/add parentId to Departments for robustness
+        const [results] = await sequelize.query("PRAGMA table_info(Departments);");
+        const hasParentId = results.some(col => col.name === 'parentId');
 
-        // Fallback to standard sync (no schema modification)
-        sequelize.sync()
-            .then(() => {
-                console.log('Database sync successful (Standard Mode)');
-                startApp();
-            })
-            .catch(fatalErr => {
-                console.error('Fatal: Database standard sync failed:', fatalErr);
-                process.exit(1);
-            });
-    });
+        if (!hasParentId) {
+            console.log('Migrating: Adding parentId to Departments...');
+            await sequelize.query("ALTER TABLE Departments ADD COLUMN parentId INTEGER REFERENCES Departments(id);");
+            console.log('Migration successful.');
+        } else {
+            console.log('Schema check: Departments.parentId exists.');
+        }
+
+        // Standard sync for other tables (safe, doesn't alter existing columns)
+        await sequelize.sync();
+        console.log('Database sync successful.');
+        startServer();
+    } catch (error) {
+        console.error('Startup/Migration failed:', error);
+
+        // Try starting anyway, maybe sync worked partially
+        startServer();
+    }
+};
+
+runMigrations();
