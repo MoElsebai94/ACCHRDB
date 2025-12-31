@@ -48,11 +48,24 @@ export default function EmployeeProfile() {
 
     const getDepartmentDisplay = (deptName) => {
         if (!deptName || departments.length === 0) return deptName;
-        const dept = departments.find(d => d.name === deptName);
+
+        // Robust matching: trim and case-insensitive
+        const normalize = str => str ? str.toString().trim().toLowerCase() : '';
+        const targetName = normalize(deptName);
+
+        const dept = departments.find(d => normalize(d.name) === targetName);
+
         if (dept && dept.parentId) {
-            const parent = departments.find(d => d.id === dept.parentId);
+            // Loose equality for ID to handle string/number mismatch
+            const parent = departments.find(d => d.id == dept.parentId);
             if (parent) {
-                return `${parent.name} / ${dept.name}`;
+                return (
+                    <span>
+                        {parent.name}
+                        <span style={{ margin: '0 5px', color: '#94a3b8', fontWeight: 'normal' }}>/</span>
+                        {dept.name}
+                    </span>
+                );
             }
         }
         return deptName;
@@ -841,7 +854,7 @@ export default function EmployeeProfile() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 20px', fontSize: '12px' }}>
                             <div><strong>المسمى الوظيفي:</strong> {employee.position} {employee.currentJobTitleDate && <span style={{ color: '#64748b' }}>({employee.currentJobTitleDate})</span>}</div>
                             {employee.jobRole && <div><strong>الوظيفة:</strong> {employee.jobRole}</div>}
-                            <div><strong>القسم:</strong> {employee.department}</div>
+                            <div><strong>القسم:</strong> {getDepartmentDisplay(employee.department)}</div>
                             {employee.costCenter && <div><strong>مركز التكلفة:</strong> {employee.costCenter}</div>}
                             <div><strong>البريد الإلكتروني:</strong> {employee.email || '-'}</div>
                             {employee.address && <div><strong>العنوان:</strong> {employee.address}</div>}
