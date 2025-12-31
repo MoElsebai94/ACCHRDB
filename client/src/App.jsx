@@ -12,6 +12,7 @@ import BuildingDetail from './pages/residences/BuildingDetail';
 import Settings from './pages/Settings';
 import LoadingScreen from './components/LoadingScreen';
 import LandingPage from './components/LandingPage';
+import Salaries from './pages/Salaries';
 import { API_URL } from './utils/api';
 
 import TopBar from './components/TopBar';
@@ -60,6 +61,7 @@ function App() {
             <Route path="/cost-centers" element={<CostCenterList />} />
             <Route path="/residences" element={<Residences />} />
             <Route path="/residences/:id" element={<BuildingDetail />} />
+            <Route path="/salaries" element={<Salaries />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>

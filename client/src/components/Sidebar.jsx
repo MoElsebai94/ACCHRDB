@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Users, LayoutDashboard, Settings, UserPlus, Building, Briefcase, Wallet, Home } from 'lucide-react';
+import { Users, LayoutDashboard, Settings, UserPlus, Building, Briefcase, Wallet, Home, Banknote } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 import { API_URL } from '../utils/api';
@@ -70,6 +70,13 @@ export default function Sidebar() {
                 >
                     <Wallet size={20} />
                     مراكز التكلفة
+                </NavLink>
+                <NavLink
+                    to="/salaries"
+                    className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                >
+                    <Banknote size={20} />
+                    المرتبات
                 </NavLink>
                 <NavLink
                     to="/residences"

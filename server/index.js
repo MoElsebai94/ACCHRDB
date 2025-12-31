@@ -99,6 +99,7 @@ const Room = require('./models/Room');
 
 const LoanHistory = require('./models/LoanHistory');
 const Vacation = require('./models/Vacation');
+const Salary = require('./models/Salary');
 
 // Define Associations
 Department.hasMany(Department, { as: 'children', foreignKey: 'parentId' });
@@ -125,6 +126,9 @@ Document.belongsTo(Employee, { foreignKey: 'employeeId' });
 
 Employee.hasMany(Vacation, { as: 'vacations', foreignKey: 'employeeId', onDelete: 'CASCADE' });
 Vacation.belongsTo(Employee, { foreignKey: 'employeeId' });
+
+Employee.hasMany(Salary, { as: 'salaries', foreignKey: 'employeeId', onDelete: 'CASCADE' });
+Salary.belongsTo(Employee, { foreignKey: 'employeeId' });
 
 // Health check for diagnostics
 app.get('/api/health', (req, res) => {
@@ -314,6 +318,91 @@ app.get('/api/employees/:id/documents', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// --- Salaries ---
+app.get('/api/salaries', async (req, res) => {
+    try {
+        const { month } = req.query;
+        if (!month) return res.status(400).json({ error: 'Month is required (YYYY-MM)' });
+
+        const salaries = await Salary.findAll({
+            where: { month },
+            include: [{
+                model: Employee,
+                attributes: ['id', 'firstName', 'lastName', 'position', 'salary', 'isActive', 'department']
+            }]
+        });
+        res.json(salaries);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/salaries/init', async (req, res) => {
+    try {
+        const { month } = req.query;
+        if (!month) return res.status(400).json({ error: 'Month is required (YYYY-MM)' });
+
+        // Get all active employees
+        const employees = await Employee.findAll({
+            where: { isActive: true }
+        });
+
+        // Get existing records for this month
+        const existing = await Salary.findAll({
+            where: { month },
+            include: [{
+                model: Employee,
+                attributes: ['id', 'firstName', 'lastName', 'position', 'salary', 'isActive', 'department']
+            }]
+        });
+        const existingEmpIds = new Set(existing.map(s => s.employeeId));
+
+        // Create virtual records for those missing
+        const virtualRecords = employees
+            .filter(emp => !existingEmpIds.has(emp.id))
+            .map(emp => ({
+                employeeId: emp.id,
+                month,
+                attendedDays: 30,
+                deductions: 0,
+                baseSalary: emp.salary || 0,
+                // Simple net calculation: (salary / 30 * days) - deductions
+                netSalary: emp.salary || 0,
+                Employee: emp
+            }));
+
+        res.json([...existing, ...virtualRecords]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/salaries/bulk', async (req, res) => {
+    try {
+        const { month, records } = req.body;
+        if (!month || !records) return res.status(400).json({ error: 'Month and records are required' });
+
+        for (const record of records) {
+            const { employeeId, attendedDays, deductions, baseSalary, netSalary, notes } = record;
+
+            // Upsert logic
+            const [salary, created] = await Salary.findOrCreate({
+                where: { employeeId, month },
+                defaults: { attendedDays, deductions, baseSalary, netSalary, notes }
+            });
+
+            if (!created) {
+                await salary.update({ attendedDays, deductions, baseSalary, netSalary, notes });
+            }
+        }
+
+        res.json({ message: 'Salaries updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 app.delete('/api/documents/:id', async (req, res) => {
     try {
