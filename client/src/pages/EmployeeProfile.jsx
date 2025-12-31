@@ -291,11 +291,11 @@ export default function EmployeeProfile() {
                         </button>
                     ) : (
                         <button
-                            onClick={() => setIsEndVacationModalOpen(true)}
+                            onClick={() => setIsVacationModalOpen(true)}
                             className="btn"
-                            style={{ background: '#64748b', color: 'white', display: 'flex', gap: '0.5rem', alignItems: 'center' }}
+                            style={{ background: '#eab308', color: 'white', display: 'flex', gap: '0.5rem', alignItems: 'center' }}
                         >
-                            <Calendar size={18} /> إنهاء الأجازة
+                            <Edit2 size={18} /> تعديل / إلغاء الأجازة
                         </button>
                     )}
                 </div>
@@ -727,14 +727,14 @@ export default function EmployeeProfile() {
                 employee={employee}
                 onConfirm={async (vacationData) => {
                     try {
-                        // 1. Create Vacation Record (History)
+                        // 1. Create/Update Vacation Record (History)
                         await fetch(`${API_URL}/vacations`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 employeeId: id,
                                 startDate: vacationData.startDate,
-                                endDate: vacationData.returnDate, // Using Return Date as the end of the "Away" period visually
+                                endDate: vacationData.returnDate,
                                 returnDate: vacationData.returnDate,
                                 type: vacationData.type,
                                 duration: vacationData.duration
@@ -748,17 +748,52 @@ export default function EmployeeProfile() {
                             body: JSON.stringify({
                                 ...employee,
                                 vacationReturnDate: vacationData.returnDate,
-                                vacationStartDate: vacationData.startDate, // Save the calculated start date
-                                arrivalDate: vacationData.returnDate, // Automatically set Arrival Date to Vacation Return Date
-                                airline: vacationData.airline
+                                vacationStartDate: vacationData.startDate,
+                                arrivalDate: vacationData.returnDate,
+                                airline: vacationData.airline,
+                                arrivalDateBeforeVacation: employee.arrivalDateBeforeVacation || employee.arrivalDate
                             })
                         });
                         if (response.ok) {
                             fetchEmployee();
                             setIsVacationModalOpen(false);
+                            setAlertModal({
+                                isOpen: true,
+                                title: 'تم الحفظ',
+                                message: 'تم تحديث بيانات الأجازة بنجاح.',
+                                type: 'success'
+                            });
                         }
                     } catch (error) {
                         console.error('Error setting vacation:', error);
+                    }
+                }}
+                onDelete={async () => {
+                    try {
+                        const response = await fetch(`${API_URL}/employees/${id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                ...employee,
+                                vacationReturnDate: null,
+                                vacationStartDate: null,
+                                airline: null,
+                                arrivalDate: employee.arrivalDateBeforeVacation || employee.arrivalDate,
+                                arrivalDateBeforeVacation: null
+                            })
+                        });
+                        if (response.ok) {
+                            fetchEmployee();
+                            setIsVacationModalOpen(false);
+                            setAlertModal({
+                                isOpen: true,
+                                title: 'تم الحذف',
+                                message: 'تم إلغاء الأجازة بنجاح والتراجع عن تغيير تاريخ الوصول.',
+                                type: 'success'
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error deleting vacation:', error);
                     }
                 }}
             />

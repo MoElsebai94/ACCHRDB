@@ -16,7 +16,7 @@ export default function ConfirmationModal({ isOpen, onClose, onConfirm, title, m
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 1100, // Higher than regular modals
             opacity: 1,
             transition: 'opacity 0.2s ease-in-out'
         }}>
@@ -29,6 +29,7 @@ export default function ConfirmationModal({ isOpen, onClose, onConfirm, title, m
                 position: 'relative'
             }}>
                 <button
+                    type="button"
                     onClick={onClose}
                     style={{
                         position: 'absolute',
@@ -64,6 +65,7 @@ export default function ConfirmationModal({ isOpen, onClose, onConfirm, title, m
 
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
                     <button
+                        type="button"
                         onClick={onConfirm}
                         className="btn btn-danger"
                         style={{ flex: 1, justifyContent: 'center' }}
@@ -71,6 +73,7 @@ export default function ConfirmationModal({ isOpen, onClose, onConfirm, title, m
                         تأكيد
                     </button>
                     <button
+                        type="button"
                         onClick={onClose}
                         className="btn btn-secondary"
                         style={{ flex: 1, justifyContent: 'center' }}

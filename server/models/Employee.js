@@ -140,6 +140,10 @@ const Employee = sequelize.define('Employee', {
   airline: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  arrivalDateBeforeVacation: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
   }
 });
 

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Calendar, X, Printer, Save, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, X, Printer, Save, ChevronDown, Trash2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import logo from '../assets/logo.png';
+import ConfirmationModal from './ConfirmationModal';
 
-export default function VacationModal({ isOpen, onClose, onConfirm, employee }) {
+export default function VacationModal({ isOpen, onClose, onConfirm, onDelete, employee }) {
     const [returnDate, setReturnDate] = useState('');
     const [travelDate, setTravelDate] = useState('');
     const [airline, setAirline] = useState('الخطوط الجوية المصرية');
@@ -12,6 +13,36 @@ export default function VacationModal({ isOpen, onClose, onConfirm, employee }) 
     const [isAirlineOpen, setIsAirlineOpen] = useState(false);
     const [financialManager, setFinancialManager] = useState('سيد أدم');
     const [isGenerating, setIsGenerating] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+    // Initial Data Effect
+    React.useEffect(() => {
+        if (isOpen && employee?.vacationReturnDate) {
+            setReturnDate(employee.vacationReturnDate);
+            // Estimate travel date (Vacation Start - 1 day) as we don't store it explicitly
+            // This is a rough estimate for display; user can correct it.
+            if (employee.vacationStartDate) {
+                const vStart = new Date(employee.vacationStartDate);
+                vStart.setDate(vStart.getDate() - 1);
+                setTravelDate(vStart.toISOString().split('T')[0]);
+            }
+            if (employee.airline) {
+                if (['الخطوط الجوية المصرية', 'الخطوط الجوية الإثيوبية', 'الخطوط الجوية التركية'].includes(employee.airline)) {
+                    setAirline(employee.airline);
+                } else {
+                    setAirline('أخرى');
+                    setCustomAirline(employee.airline);
+                }
+            }
+        } else if (isOpen) {
+            // Reset if opening new
+            setReturnDate('');
+            setTravelDate('');
+            setAirline('الخطوط الجوية المصرية');
+            setCustomAirline('');
+        }
+    }, [isOpen, employee]);
+
 
     const airlineOptions = [
         "الخطوط الجوية المصرية",
@@ -361,16 +392,26 @@ export default function VacationModal({ isOpen, onClose, onConfirm, employee }) 
                             <button
                                 type="submit"
                                 className="btn btn-primary"
-                                style={{ flex: 1, justifyContent: 'center', gap: '8px' }}
+                                style={{ flex: 1, justifyContent: 'center' }}
                             >
                                 <Save size={18} />
-                                حفظ الأجازة
+                                {employee?.vacationReturnDate ? 'حفظ التعديلات' : 'تسجيل الأجازة'}
                             </button>
+                            {employee?.vacationReturnDate && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    className="btn"
+                                    style={{ background: '#ef4444', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0 1rem' }}
+                                >
+                                    <Trash2 size={18} />
+                                    حذف
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 onClick={onClose}
                                 className="btn btn-secondary"
-                                style={{ flex: 1, justifyContent: 'center' }}
                             >
                                 إلغاء
                             </button>
@@ -497,6 +538,17 @@ export default function VacationModal({ isOpen, onClose, onConfirm, employee }) 
                     </table>
                 </div>
             </div>
+
+            <ConfirmationModal
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={() => {
+                    onDelete();
+                    setShowDeleteConfirm(false);
+                }}
+                title="إلغاء / حذف الأجازة"
+                message="هل أنت متأكد من إلغاء أو حذف هذه الأجازة؟ سيتم مسح بيانات الأجازة الحالية للموظف."
+            />
         </div>
     );
 }
