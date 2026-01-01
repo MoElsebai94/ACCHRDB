@@ -111,7 +111,12 @@ export default function EmployeeProfile() {
         if (!element) return;
 
         // Make visible for capture
+        // Make visible for capture (off-screen)
         element.style.display = 'block';
+        element.style.position = 'fixed';
+        element.style.top = '0';
+        element.style.left = '-10000px';
+        element.style.zIndex = '1000';
 
         try {
             const canvas = await html2canvas(element, {
@@ -859,19 +864,18 @@ export default function EmployeeProfile() {
                 message="هل أنت متأكد من حذف هذا السجل؟ لا يمكن التراجع عن هذا الإجراء."
                 onConfirm={confirmDeleteHistory}
             />
-            {/* Hidden PDF Content */}
+            {/* PDF Template (Hidden) */}
             <div id="pdf-content" style={{
-                display: 'none',
+                position: 'fixed',
+                top: 0,
+                left: '-10000px',
+                zIndex: 1000,
                 width: '210mm',
-                height: '297mm', // Fixed A4 height for absolute positioning
+                minHeight: '297mm',
                 padding: '10mm',
                 background: 'white',
-                color: 'black',
-                direction: 'rtl',
-                position: 'absolute',
-                top: 0,
-                right: '-9999px',
-                boxSizing: 'border-box'
+                fontFamily: 'Cairo, sans-serif',
+                direction: 'rtl'
             }}>
                 {/* Header with Logo */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #2980b9', paddingBottom: '5mm', marginBottom: '5mm' }}>

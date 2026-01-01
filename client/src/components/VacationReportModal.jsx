@@ -72,7 +72,12 @@ export default function VacationReportModal({ isOpen, onClose, employees, depart
         if (!element) return;
 
         const originalDisplay = element.style.display;
+        // Make visible (off-screen)
         element.style.display = 'block';
+        element.style.position = 'fixed';
+        element.style.top = '0';
+        element.style.left = '-10000px';
+        element.style.zIndex = '1000';
 
         try {
             for (const pageConfig of pages) {
@@ -231,7 +236,8 @@ export default function VacationReportModal({ isOpen, onClose, employees, depart
                     fontFamily: 'Cairo, sans-serif',
                     position: 'absolute',
                     top: 0,
-                    right: '-9999px'
+                    left: '-10000px', // Hide off-screen
+                    zIndex: 1000
                 }}>
                     {printPage && (
                         <>

@@ -357,7 +357,10 @@ export default function DepartmentList() {
             />
 
             {/* Hidden Printable Report */}
-            <div id="structure-report-printable" style={{ display: 'none', width: '210mm', padding: '15mm', backgroundColor: 'white', direction: 'rtl', fontFamily: 'Cairo, sans-serif' }}>
+            <div id="structure-report-printable" style={{
+                position: 'fixed', top: 0, left: '-10000px', zIndex: 1000,
+                width: '210mm', padding: '15mm', backgroundColor: 'white', direction: 'rtl', fontFamily: 'Cairo, sans-serif'
+            }}>
                 {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '30px', borderBottom: '2px solid #1e3a8a', paddingBottom: '15px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>

@@ -389,7 +389,11 @@ export default function Salaries() {
                 minHeight: '297mm',
                 width: '210mm',
                 fontFamily: "'Cairo', sans-serif",
-                direction: 'rtl'
+                direction: 'rtl',
+                position: 'fixed',
+                top: 0,
+                left: '-10000px', // Hide off-screen to prevent flash
+                zIndex: 1000
             }}>
                 {/* Modern Branded Header */}
                 <div style={{
@@ -546,8 +550,8 @@ export default function Salaries() {
                 display: 'none', // Hidden by default, toggled during export
                 position: 'fixed',
                 top: '0',
-                left: '0',
-                zIndex: -1000,
+                left: '-10000px', // Hide off-screen
+                zIndex: 1000,
                 padding: '12mm',
                 backgroundColor: 'white',
                 width: '210mm',

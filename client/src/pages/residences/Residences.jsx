@@ -598,6 +598,79 @@ export default function Residences() {
                 </div>
             )}
 
+            {/* Hidden Report for PDF Generation */}
+            {printableData && (
+                <div id="residences-report-print" style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: '-10000px', // Hide off-screen
+                    zIndex: 1000,
+                    width: 'fit-content', // Let it take natural width based on content
+                    background: 'white',
+                    padding: '20px',
+                    direction: 'rtl',
+                    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '2px solid #0f172a', paddingBottom: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <img src={printableData.logoBase64} alt="Logo" style={{ height: '60px' }} />
+                            <div>
+                                <h2 style={{ margin: 0, color: '#0f172a', fontSize: '24px' }}>المقاولون العرب (الكاميرون)</h2>
+                                <p style={{ margin: 0, color: '#334155' }}>Arab Contractors Cameroon</p>
+                            </div>
+                        </div>
+                        <div style={{ textAlign: 'left' }}>
+                            <h1 style={{ margin: 0, color: '#0f172a', fontSize: '20px' }}>تقرير الاستراحات الشهري</h1>
+                            <p style={{ margin: 0, color: '#64748b' }}>Month: {printableData.month}</p>
+                        </div>
+                    </div>
+
+                    {/* Report Table */}
+                    <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '11px' }}>
+                        <thead>
+                            <tr style={{ background: '#1e293b', color: 'white' }}>
+                                <th style={{ padding: '8px', border: '1px solid #cbd5e1', width: '60px' }}>Day</th>
+                                {printableData.buildings.map((b, i) => (
+                                    <th key={i} style={{ padding: '8px', border: '1px solid #cbd5e1' }}>{b.name}</th>
+                                ))}
+                                <th style={{ padding: '8px', border: '1px solid #cbd5e1', background: '#334155' }}>الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {printableData.days.map((day, dIdx) => (
+                                <tr key={dIdx} style={{ background: dIdx % 2 === 0 ? 'white' : '#f8fafc' }}>
+                                    <td style={{ padding: '6px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold' }}>{day}</td>
+                                    {printableData.buildings.map((b, bIdx) => {
+                                        const stat = b.stats[day - 1]; // day is 1-based
+                                        const p = stat?.present || 0;
+                                        const v = stat?.vacation || 0;
+                                        return (
+                                            <td key={bIdx} style={{ padding: '6px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                                                {p > 0 && <span style={{ color: '#166534', fontWeight: 'bold' }}>P: {p}</span>}
+                                                {p > 0 && v > 0 && <span style={{ margin: '0 4px', color: '#cbd5e1' }}>|</span>}
+                                                {v > 0 && <span style={{ color: '#dc2626' }}>V: {v}</span>}
+                                                {p === 0 && v === 0 && <span style={{ color: '#94a3b8' }}>-</span>}
+                                            </td>
+                                        );
+                                    })}
+                                    <td style={{ padding: '6px', border: '1px solid #cbd5e1', textAlign: 'center', background: '#f1f5f9', fontWeight: 'bold' }}>
+                                        <span style={{ color: '#166534' }}>{printableData.dailyGrandTotals[day - 1].totalP}</span>
+                                        <span style={{ margin: '0 5px' }}>/</span>
+                                        <span style={{ color: '#dc2626' }}>{printableData.dailyGrandTotals[day - 1].totalV}</span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    {/* Footer */}
+                    <div style={{ marginTop: '20px', fontSize: '10px', color: '#94a3b8', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '10px' }}>
+                        تم استخراج هذا التقرير من نظام إدارة الموارد البشرية | {new Date().toLocaleDateString('ar-EG')}
+                    </div>
+                </div>
+            )}
+
             <style>{`
                 .page-container {
                     padding: 2rem;
