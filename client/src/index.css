@@ -263,6 +263,27 @@ input[type="date"] {
   margin-bottom: var(--spacing-xl);
 }
 
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xl);
+  gap: var(--spacing-md);
+}
+
+.header-info h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--primary-color);
+}
+
+.header-info p {
+  margin: var(--spacing-xs) 0 0 0;
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+}
+
 /* Table Styles */
 .table-container {
   overflow-x: auto;

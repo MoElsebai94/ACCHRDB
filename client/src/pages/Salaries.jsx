@@ -4,6 +4,7 @@ import { Save, FileText, Download, Calendar, Search, AlertCircle, CheckCircle2 }
 import PageLoading from '../components/PageLoading';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import CustomSelect from '../components/CustomSelect';
 import logo from '../assets/logo.png';
 
 export default function Salaries() {
@@ -307,14 +308,14 @@ export default function Salaries() {
                 </div>
                 <div className="header-actions">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', padding: '0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        <select
-                            className="table-input"
-                            style={{ width: '100px', padding: '0.25rem' }}
-                            value={annualYear}
-                            onChange={(e) => setAnnualYear(e.target.value)}
-                        >
-                            {[2024, 2025, 2026].map(y => <option key={y} value={y.toString()}>{y}</option>)}
-                        </select>
+                        <div style={{ width: '120px' }}>
+                            <CustomSelect
+                                options={[2024, 2025, 2026].map(y => ({ value: y.toString(), label: y.toString() }))}
+                                value={annualYear}
+                                onChange={setAnnualYear}
+                                placeholder="السنة"
+                            />
+                        </div>
                         <button className="btn btn-secondary" onClick={handleExportAnnualPDF} disabled={isExportingAnnual}>
                             <Download size={18} />
                             {isExportingAnnual ? 'جاري التحضير...' : 'تقرير سنوي'}
