@@ -10,6 +10,8 @@ import logo from '../assets/logo.png';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
+import TableSkeleton from '../components/skeletons/TableSkeleton';
+
 import AlertModal from '../components/AlertModal';
 
 export default function EmployeeList() {
@@ -413,7 +415,7 @@ export default function EmployeeList() {
     };
 
 
-    if (loading) return <PageLoading />;
+    if (loading) return <TableSkeleton />;
 
     return (
         <div className="page-container" dir="rtl">

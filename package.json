@@ -1,6 +1,6 @@
 {
   "name": "gomaadb",
-  "version": "1.4.36",
+  "version": "1.4.39",
   "description": "",
   "main": "electron/main.js",
   "scripts": {

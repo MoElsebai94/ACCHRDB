@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { API_URL } from '../utils/api';
 import DashboardCharts from '../components/DashboardCharts';
 import PageLoading from '../components/PageLoading';
+import DashboardSkeleton from '../components/skeletons/DashboardSkeleton';
 
 export default function Dashboard() {
     const [stats, setStats] = useState({
@@ -90,7 +91,7 @@ export default function Dashboard() {
         }
     };
 
-    if (loading) return <PageLoading />;
+    if (loading) return <DashboardSkeleton />;
 
     return (
         <div className="page-container" dir="rtl">
