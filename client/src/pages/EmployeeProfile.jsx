@@ -586,7 +586,7 @@ export default function EmployeeProfile() {
                                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>فترة الإعارة</div>
                                     <div style={{ fontWeight: '500' }}>
                                         من {employee.loanStartDate}
-                                        {employee.loanEndDate && <> إلى {employee.loanEndDate}</>}
+                                        {employee.loanEndDate && !String(employee.loanEndDate).toLowerCase().includes('invalid') && <> إلى {employee.loanEndDate}</>}
                                     </div>
                                     {employee.loanEndDate && (
                                         <button
@@ -992,7 +992,7 @@ export default function EmployeeProfile() {
                         <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
                             <div style={{ width: '20%', padding: '6px 8px', fontWeight: 'bold', background: '#f8fafc', borderLeft: '1px solid #e2e8f0' }}>فترة الإعارة</div>
                             <div style={{ width: '80%', padding: '6px 8px', background: 'white' }}>
-                                من {employee.loanStartDate} {employee.loanEndDate && `إلى ${employee.loanEndDate}`}
+                                من {employee.loanStartDate} {employee.loanEndDate && !String(employee.loanEndDate).toLowerCase().includes('invalid') && `إلى ${employee.loanEndDate}`}
                             </div>
                         </div>
                     )}
