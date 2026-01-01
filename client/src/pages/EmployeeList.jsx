@@ -26,6 +26,7 @@ export default function EmployeeList() {
     const [costCenters, setCostCenters] = useState([]);
     const [buildings, setBuildings] = useState([]);
     const [selectedBuilding, setSelectedBuilding] = useState('');
+    const [selectedYear, setSelectedYear] = useState('');
     const [showInactive, setShowInactive] = useState(false);
     const [showColumnMenu, setShowColumnMenu] = useState(false);
     const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', type: 'error' });
@@ -52,7 +53,7 @@ export default function EmployeeList() {
         { key: 'currentJobTitleDate', label: 'تاريخ المسمى' },
         { key: 'maritalStatus', label: 'الحالة الاجتماعية' },
         { key: 'loanStartDate', label: 'تاريخ بداية الإعارة' },
-        { key: 'loanEndDate', label: 'تاريخ نهاية الإعارة' },
+        { key: 'loanEndDate', label: 'تاريخ نهاية الإعارة' }, // Keep original key for logic, we handle "display" in render
         { key: 'efficiencyReport', label: 'تقرير الكفاءة' },
         { key: 'address', label: 'العنوان' },
         { key: 'cairoPhone', label: 'التليفون بالقاهره' },
@@ -160,10 +161,35 @@ export default function EmployeeList() {
                 matchesBuilding = permanentBuilding === selectedBuilding || temporaryBuilding === selectedBuilding;
             }
 
+            // Year Filter Logic for Loans
+            let matchesYear = true;
+            if (selectedYear) {
+                // To match a year, the employee must have a loan period that overlaps with that year.
+                // Overlap condition: (StartA <= EndB) and (EndA >= StartB)
+                // Filter Period: Jan 1, Year to Dec 31, Year
+                // Loan Period: loanStartDate to (loanEndDate OR Future)
+
+                if (!emp.loanStartDate) {
+                    matchesYear = false; // Must have loan start date to be considered loaned
+                } else {
+                    const startOfYear = new Date(selectedYear, 0, 1);
+                    const endOfYear = new Date(selectedYear, 11, 31);
+
+                    const loanStart = new Date(emp.loanStartDate);
+                    // If no end date or invalid, assume ongoing (far future)
+                    let loanEnd = emp.loanEndDate && !String(emp.loanEndDate).toLowerCase().includes('invalid')
+                        ? new Date(emp.loanEndDate)
+                        : new Date(9999, 11, 31);
+
+                    // Check for overlap
+                    matchesYear = (loanStart <= endOfYear) && (loanEnd >= startOfYear);
+                }
+            }
+
             const matchesInactive = showInactive ? true : emp.isActive;
-            return matchesSearch && matchesDept && matchesCostCenter && matchesPosition && matchesBuilding && matchesInactive;
+            return matchesSearch && matchesDept && matchesCostCenter && matchesPosition && matchesBuilding && matchesYear && matchesInactive;
         });
-    }, [employees, searchTerm, selectedDept, selectedCostCenter, selectedPosition, selectedBuilding, showInactive, deptDescendants]);
+    }, [employees, searchTerm, selectedDept, selectedCostCenter, selectedPosition, selectedBuilding, selectedYear, showInactive, deptDescendants]);
 
     const sortedEmployees = useMemo(() => {
         // 1. Create Map: Dept Name -> Hierarchical Index
@@ -523,13 +549,30 @@ export default function EmployeeList() {
                         icon={Filter}
                     />
                 </div>
-                {(selectedDept || selectedCostCenter || selectedPosition || searchTerm) && (
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                    <CustomSelect
+                        options={[
+                            { value: '', label: 'كل السنوات' },
+                            // Generate last 5 years + next year
+                            ...Array.from({ length: 7 }, (_, i) => {
+                                const year = new Date().getFullYear() - 5 + i;
+                                return { value: String(year), label: String(year) };
+                            }).reverse()
+                        ]}
+                        value={selectedYear}
+                        onChange={setSelectedYear}
+                        placeholder="سنة الميزانية"
+                        icon={Filter}
+                    />
+                </div>
+                {(selectedDept || selectedCostCenter || selectedPosition || searchTerm || selectedBuilding || selectedYear) && (
                     <button
                         onClick={() => {
                             setSelectedDept('');
                             setSelectedCostCenter('');
                             setSelectedPosition('');
                             setSelectedBuilding('');
+                            setSelectedYear('');
                             setSearchTerm('');
                         }}
                         className="btn btn-secondary"
@@ -749,6 +792,19 @@ export default function EmployeeList() {
                                                     'Widowed': 'أرمل'
                                                 };
                                                 cellContent = statusMap[cellContent] || cellContent || '-';
+                                            } else if (col.key === 'loanEndDate') {
+                                                const isValidEndDate = emp.loanEndDate &&
+                                                    !String(emp.loanEndDate).toLowerCase().includes('invalid') &&
+                                                    emp.loanEndDate !== '-' &&
+                                                    String(emp.loanEndDate).trim() !== '';
+
+                                                if (isValidEndDate) {
+                                                    cellContent = emp.loanEndDate;
+                                                } else if (emp.loanStartDate && !String(emp.loanStartDate).toLowerCase().includes('invalid')) {
+                                                    cellContent = 'لم تنتهي';
+                                                } else {
+                                                    cellContent = '-';
+                                                }
                                             } else if (col.key === 'residence') {
                                                 if (emp.permanentRoom?.Apartment?.Building?.name) {
                                                     cellContent = emp.permanentRoom.Apartment.Building.name;
@@ -877,6 +933,21 @@ export default function EmployeeList() {
                                             'Widowed': 'أرمل'
                                         };
                                         content = statusMap[content] || content || '-';
+                                    }
+
+                                    if (col.key === 'loanEndDate') {
+                                        const isValidEndDate = emp.loanEndDate &&
+                                            !String(emp.loanEndDate).toLowerCase().includes('invalid') &&
+                                            emp.loanEndDate !== '-' &&
+                                            String(emp.loanEndDate).trim() !== '';
+
+                                        if (isValidEndDate) {
+                                            content = emp.loanEndDate;
+                                        } else if (emp.loanStartDate && !String(emp.loanStartDate).toLowerCase().includes('invalid')) {
+                                            content = 'لم تنتهي';
+                                        } else {
+                                            content = '-';
+                                        }
                                     }
 
                                     if (col.key === 'residence') {

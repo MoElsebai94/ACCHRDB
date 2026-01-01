@@ -46,13 +46,13 @@ const upload = multer({
     storage: storage,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
     fileFilter: (req, file, cb) => {
-        const filetypes = /jpeg|jpg|png|webp/;
+        const filetypes = /jpeg|jpg|png|webp|gif|bmp|avif/;
         const mimetype = filetypes.test(file.mimetype);
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
         if (mimetype && extname) {
             return cb(null, true);
         }
-        cb(new Error("Only images (jpeg, jpg, png, webp) are allowed"));
+        cb(new Error("Only images (jpeg, jpg, png, webp, gif, bmp, avif) are allowed"));
     }
 });
 
@@ -63,16 +63,18 @@ const docStorage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        // Ensure filename on disk is also safe if needed, but usually random is fine.
+        // We keep the original extension.
         cb(null, 'doc-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
 
 const uploadDoc = multer({
     storage: docStorage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
     fileFilter: (req, file, cb) => {
-        // Accept common document types + images
-        const filetypes = /pdf|doc|docx|xls|xlsx|txt|jpeg|jpg|png|webp/;
+        // Accept common document types + images + archives
+        const filetypes = /pdf|doc|docx|xls|xlsx|ppt|pptx|csv|txt|zip|rar|7z|jpeg|jpg|png|webp|gif|bmp|avif/;
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
 
         // Mime check is looser for loose matching or just rely on extname for simplicity in internal tool
@@ -294,10 +296,13 @@ app.post('/api/employees/:id/documents', uploadDoc.single('document'), async (re
     try {
         if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
+        // FIX: Decode originalName to handle UTF-8 correctly
+        const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+
         const document = await Document.create({
             employeeId: req.params.id,
             filename: req.file.filename,
-            originalName: req.file.originalname,
+            originalName: originalName,
             mimeType: req.file.mimetype,
             size: req.file.size
         });
@@ -1064,6 +1069,29 @@ app.delete('/api/employees/:id', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error('Unhandled Error:', err);
+
+    if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'File too large (Max 50MB)' });
+        }
+        return res.status(400).json({ error: `Upload error: ${err.message}` });
+    }
+
+    // Explicitly handle our custom FileType error
+    if (err.message === 'FileType not allowed') {
+        return res.status(400).json({ error: 'Unsupported file type' });
+    }
+
+    if (res.headersSent) {
+        return next(err);
+    }
+
+    res.status(500).json({ error: err.message || 'Internal Server Error' });
 });
 
 // Start server
