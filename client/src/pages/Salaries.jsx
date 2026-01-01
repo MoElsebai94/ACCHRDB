@@ -81,6 +81,22 @@ export default function Salaries() {
 
     const [printingRecords, setPrintingRecords] = useState(null);
     const [printingMonth, setPrintingMonth] = useState(null);
+    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+    const [pdfProgress, setPdfProgress] = useState(0);
+
+    const [pdfTotal, setPdfTotal] = useState(0);
+
+    // Lock scroll when generating PDF
+    useEffect(() => {
+        if (isGeneratingPDF) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isGeneratingPDF]);
 
     const handleExportPDF = async () => {
         if (records.length === 0) {
@@ -88,7 +104,7 @@ export default function Salaries() {
             return;
         }
 
-        const ROWS_PER_PAGE = 18; // Adjusted for A4 safety
+        const ROWS_PER_PAGE = 12; // Increased to 12 as requested
         const chunks = [];
         for (let i = 0; i < records.length; i += ROWS_PER_PAGE) {
             chunks.push(records.slice(i, i + ROWS_PER_PAGE));
@@ -101,10 +117,15 @@ export default function Salaries() {
         element.style.display = 'block';
 
         try {
+            setIsGeneratingPDF(true);
+            setPdfTotal(chunks.length);
+            setPdfProgress(0);
+
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
 
             for (let i = 0; i < chunks.length; i++) {
+                setPdfProgress(i + 1);
                 // Update state to render current chunk
                 setPrintingRecords(chunks[i]);
                 // Wait for render
@@ -128,8 +149,8 @@ export default function Salaries() {
             console.error('Error exporting PDF:', error);
             setAlert({ type: 'error', message: 'حدث خطأ أثناء تصدير ملف PDF' });
         } finally {
-            element.style.display = originalDisplay;
             setPrintingRecords(null); // Reset
+            setIsGeneratingPDF(false);
         }
     };
 
@@ -137,6 +158,8 @@ export default function Salaries() {
 
     const handleExportAnnualPDF = async () => {
         setIsExportingAnnual(true);
+        setIsGeneratingPDF(true);
+        setPdfProgress(0);
         try {
             const res = await fetch(`${API_URL}/salaries/year?year=${annualYear}`);
             const data = await res.json();
@@ -169,6 +192,19 @@ export default function Salaries() {
             const originalDisplay = template.style.display;
             template.style.display = 'block';
 
+            // Pre-calculate total pages for progress bar
+            let totalPages = 0;
+            for (const m of months) {
+                const fullMonth = `${annualYear}-${m}`;
+                const monthRecords = data.filter(r => r.month === fullMonth);
+                if (monthRecords.length > 0) {
+                    totalPages += Math.ceil(monthRecords.length / 14);
+                }
+            }
+            setPdfTotal(totalPages);
+
+            let currentPage = 0;
+
             for (const m of months) {
                 const fullMonth = `${annualYear}-${m}`;
                 const monthRecords = data.filter(r => r.month === fullMonth);
@@ -176,13 +212,15 @@ export default function Salaries() {
                 if (monthRecords.length === 0) continue;
 
                 // Chunking for Annual Report
-                const ROWS_PER_PAGE = 18;
+                const ROWS_PER_PAGE = 14;
                 const chunks = [];
                 for (let i = 0; i < monthRecords.length; i += ROWS_PER_PAGE) {
                     chunks.push(monthRecords.slice(i, i + ROWS_PER_PAGE));
                 }
 
                 for (let i = 0; i < chunks.length; i++) {
+                    currentPage++;
+                    setPdfProgress(currentPage);
                     const chunk = chunks[i];
 
                     // Update context for the template
@@ -190,7 +228,8 @@ export default function Salaries() {
                         month: m,
                         year: annualYear,
                         records: chunk,
-                        totalRecords: monthRecords // Pass full records for summary calculation if needed
+                        totalRecords: monthRecords,
+                        isLastPageOfMonth: i === chunks.length - 1
                     });
 
                     // Wait for render
@@ -226,6 +265,7 @@ export default function Salaries() {
             setTimeout(() => setAlert(null), 3000);
         } finally {
             setIsExportingAnnual(false);
+            setIsGeneratingPDF(false);
         }
     };
 
@@ -241,6 +281,25 @@ export default function Salaries() {
 
     return (
         <div className="page-container" dir="rtl">
+            {isGeneratingPDF && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    zIndex: 9999,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                }}>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                    <p className="text-xl font-semibold text-gray-700" style={{ fontFamily: "'Cairo', sans-serif" }}>جاري إنشاء التقرير...</p>
+                    {pdfTotal > 0 && <p className="text-sm text-gray-500 mt-2" style={{ fontFamily: "'Cairo', sans-serif" }}>جاري معالجة الصفحة {pdfProgress} من {pdfTotal}</p>}
+                </div>
+            )}
             <div className="page-header">
                 <div className="header-info">
                     <h1>إدارة المرتبات</h1>
@@ -441,7 +500,12 @@ export default function Salaries() {
                 <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', marginTop: '2mm', border: '1px solid #e2e8f0', borderRadius: '3mm', overflow: 'hidden', direction: 'rtl' }}>
                     <thead>
                         <tr style={{ backgroundColor: '#1e293b' }}>
-                            <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'right', borderBottom: '2px solid #0f172a', fontWeight: '600', fontFamily: "'Cairo', sans-serif" }}>
+                            <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'center', borderBottom: '2px solid #0f172a', fontWeight: '600', fontFamily: "'Cairo', sans-serif", width: '10mm' }}>
+                                <span style={{ whiteSpace: 'nowrap' }}>#</span>
+                            </td>
+                            <td style={{
+                                padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'right', borderBottom: '2px solid #0f172a', fontWeight: '600', fontFamily: "'Cairo', sans-serif"
+                            }}>
                                 <span style={{ whiteSpace: 'nowrap' }}>اسم الموظف</span>
                             </td>
                             <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'right', borderBottom: '2px solid #0f172a', fontWeight: '600', fontFamily: "'Cairo', sans-serif" }}>
@@ -464,6 +528,7 @@ export default function Salaries() {
                     <tbody>
                         {(printingRecords || records).map((record, idx) => (
                             <tr key={record.employeeId} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                                <td style={{ padding: '4mm', fontSize: '12px', color: '#94a3b8', borderBottom: '1px solid #f1f5f9', textAlign: 'center', fontWeight: '600' }}>{(records.indexOf(record) + 1)}</td>
                                 <td style={{ padding: '4mm', fontSize: '12px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{record.Employee?.firstName} {record.Employee?.lastName}</td>
                                 <td style={{ padding: '4mm', fontSize: '12px', color: '#64748b', borderBottom: '1px solid #f1f5f9' }}>{record.Employee?.position}</td>
                                 <td style={{ padding: '4mm', fontSize: '12px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>{record.attendedDays}</td>
@@ -476,12 +541,12 @@ export default function Salaries() {
                 </table>
 
                 {/* Modern Footer (No Signatures) */}
-                <div style={{ marginTop: '15mm', padding: '8mm', borderTop: '2px solid #f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <div style={{ marginTop: '5mm', padding: '4mm', borderTop: '2px solid #f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                     <div style={{ color: '#94a3b8', fontSize: '11px', textAlign: 'center' }}>
                         تم استخراج هذا التقرير آلياً من نظام إدارة الموارد البشرية | {new Date().toLocaleString('ar-EG')}
                     </div>
                 </div>
-            </div>
+            </div >
 
             <style>{`
                 .page-header {
@@ -593,6 +658,7 @@ export default function Salaries() {
                         <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', marginTop: '2mm', border: '1px solid #e2e8f0', borderRadius: '3mm', overflow: 'hidden', direction: 'rtl' }}>
                             <thead>
                                 <tr style={{ backgroundColor: '#1e293b' }}>
+                                    <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'center', fontWeight: '600', width: '10mm' }}>#</td>
                                     <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'right', fontWeight: '600' }}>اسم الموظف</td>
                                     <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'right', fontWeight: '600' }}>الوظيفة</td>
                                     <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'center', fontWeight: '600' }}>الأيام</td>
@@ -604,6 +670,7 @@ export default function Salaries() {
                             <tbody>
                                 {annualPrintingContext.records.map((r, idx) => (
                                     <tr key={r.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                                        <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', fontWeight: '600' }}>{(annualPrintingContext.totalRecords.indexOf(r) + 1)}</td>
                                         <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{r.Employee?.firstName} {r.Employee?.lastName}</td>
                                         <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9' }}>{r.Employee?.position}</td>
                                         <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>{r.attendedDays}</td>
@@ -615,15 +682,17 @@ export default function Salaries() {
                             </tbody>
                         </table>
 
-                        {/* Monthly Total */}
-                        <div style={{ marginTop: '5mm', display: 'flex', justifyContent: 'flex-start', padding: '4mm', background: '#f8fafc', borderRadius: '2mm', border: '1px solid #e2e8f0' }}>
-                            <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>
-                                إجمالي صافي الشهر: {annualPrintingContext.totalRecords.reduce((acc, cr) => acc + (cr.netSalary || 0), 0).toLocaleString()}
+                        {/* Monthly Total - Only on last page of the month */}
+                        {annualPrintingContext.isLastPageOfMonth && (
+                            <div style={{ marginTop: '5mm', display: 'flex', justifyContent: 'flex-start', padding: '4mm', background: '#f8fafc', borderRadius: '2mm', border: '1px solid #e2e8f0' }}>
+                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>
+                                    إجمالي صافي الشهر: {annualPrintingContext.totalRecords.reduce((acc, cr) => acc + (cr.netSalary || 0), 0).toLocaleString()}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </>
                 )}
             </div>
-        </div>
+        </div >
     );
 }

@@ -301,7 +301,10 @@ export default function EmployeeList() {
     const [printingChunk, setPrintingChunk] = useState(null);
     const [printingPageNum, setPrintingPageNum] = useState(1);
     const [isPrinting, setIsPrinting] = useState(false);
+
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+    const [pdfProgress, setPdfProgress] = useState(0);
+    const [pdfTotal, setPdfTotal] = useState(0);
 
     const printRef = useRef(null);
 
@@ -325,7 +328,7 @@ export default function EmployeeList() {
             }
 
             // Prepare Chunks
-            const ROWS_PER_PAGE = 18;
+            const ROWS_PER_PAGE = 12;
             const chunks = [];
             for (let i = 0; i < sortedEmployees.length; i += ROWS_PER_PAGE) {
                 chunks.push(sortedEmployees.slice(i, i + ROWS_PER_PAGE));
@@ -338,6 +341,8 @@ export default function EmployeeList() {
             for (let i = 0; i < chunks.length; i++) {
                 setPrintingChunk(chunks[i]);
                 setPrintingPageNum(i + 1);
+                setPdfProgress(i + 1);
+                setPdfTotal(chunks.length);
 
                 // Wait for React to update the source element content
                 await new Promise(resolve => setTimeout(resolve, 800));
@@ -427,6 +432,7 @@ export default function EmployeeList() {
                 }}>
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
                     <p className="text-xl font-semibold text-gray-700">جاري إنشاء التقرير...</p>
+                    {pdfTotal > 0 && <p className="text-sm text-gray-500 mt-2">جاري معالجة الصفحة {pdfProgress} من {pdfTotal}</p>}
                 </div>
             )}
             <div className="header" style={{ justifyContent: 'flex-end', gap: '0.75rem' }}>
@@ -802,10 +808,11 @@ export default function EmployeeList() {
                 top: 0,
                 width: '297mm',
                 minHeight: '210mm',
-                background: 'white',
-                padding: '10mm 10mm 30mm 10mm',
+                padding: '10mm',
+                paddingBottom: '25mm', // Extra padding to prevent cutoff
+                backgroundColor: 'white',
                 direction: 'rtl',
-                fontFamily: 'Arial, sans-serif',
+                fontFamily: 'Cairo, sans-serif',
                 boxSizing: 'border-box',
                 display: 'block' // Always block so it has dimensions, but off-screen
             }}>
