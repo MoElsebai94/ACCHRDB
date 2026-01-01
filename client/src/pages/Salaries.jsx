@@ -79,7 +79,21 @@ export default function Salaries() {
         }
     };
 
+    const [printingRecords, setPrintingRecords] = useState(null);
+    const [printingMonth, setPrintingMonth] = useState(null);
+
     const handleExportPDF = async () => {
+        if (records.length === 0) {
+            setAlert({ type: 'error', message: 'لا توجد بيانات للتصدير' });
+            return;
+        }
+
+        const ROWS_PER_PAGE = 18; // Adjusted for A4 safety
+        const chunks = [];
+        for (let i = 0; i < records.length; i += ROWS_PER_PAGE) {
+            chunks.push(records.slice(i, i + ROWS_PER_PAGE));
+        }
+
         const element = document.getElementById('salaries-report');
         if (!element) return;
 
@@ -87,25 +101,39 @@ export default function Salaries() {
         element.style.display = 'block';
 
         try {
-            const canvas = await html2canvas(element, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#ffffff'
-            });
-
-            const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            for (let i = 0; i < chunks.length; i++) {
+                // Update state to render current chunk
+                setPrintingRecords(chunks[i]);
+                // Wait for render
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+                if (i > 0) pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            }
+
             pdf.save(`Salaries_Report_${month}.pdf`);
         } catch (error) {
             console.error('Error exporting PDF:', error);
+            setAlert({ type: 'error', message: 'حدث خطأ أثناء تصدير ملف PDF' });
         } finally {
             element.style.display = originalDisplay;
+            setPrintingRecords(null); // Reset
         }
     };
+
+    const [annualPrintingContext, setAnnualPrintingContext] = useState(null);
 
     const handleExportAnnualPDF = async () => {
         setIsExportingAnnual(true);
@@ -120,42 +148,71 @@ export default function Salaries() {
                 return;
             }
 
-            setAnnualData(data);
-
-            // Wait for state to update and hidden template to be ready
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Wait for state to update
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const months = Array.from({ length: 12 }, (_, i) => {
-                const m = (i + 1).toString().padStart(2, '0');
-                return `${annualYear}-${m}`;
-            });
-
+            const pdfWidth = pdf.internal.pageSize.getWidth();
             let pageAdded = false;
 
-            for (const m of months) {
-                const element = document.getElementById(`annual-report-${m}`);
-                if (!element || element.getAttribute('data-has-records') === 'false') continue;
+            const months = Array.from({ length: 12 }, (_, i) => {
+                return (i + 1).toString().padStart(2, '0');
+            });
 
-                // Make visible temporarily for capture
-                element.style.display = 'block';
-
-                const canvas = await html2canvas(element, {
-                    scale: 2,
-                    useCORS: true,
-                    backgroundColor: '#ffffff'
-                });
-
-                element.style.display = 'none';
-
-                const imgData = canvas.toDataURL('image/png');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-                if (pageAdded) pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pageAdded = true;
+            const template = document.getElementById('annual-report-template');
+            if (!template) {
+                console.error("Template not found");
+                return;
             }
+
+            // Temporarily show template
+            const originalDisplay = template.style.display;
+            template.style.display = 'block';
+
+            for (const m of months) {
+                const fullMonth = `${annualYear}-${m}`;
+                const monthRecords = data.filter(r => r.month === fullMonth);
+
+                if (monthRecords.length === 0) continue;
+
+                // Chunking for Annual Report
+                const ROWS_PER_PAGE = 18;
+                const chunks = [];
+                for (let i = 0; i < monthRecords.length; i += ROWS_PER_PAGE) {
+                    chunks.push(monthRecords.slice(i, i + ROWS_PER_PAGE));
+                }
+
+                for (let i = 0; i < chunks.length; i++) {
+                    const chunk = chunks[i];
+
+                    // Update context for the template
+                    setAnnualPrintingContext({
+                        month: m,
+                        year: annualYear,
+                        records: chunk,
+                        totalRecords: monthRecords // Pass full records for summary calculation if needed
+                    });
+
+                    // Wait for render
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
+                    const canvas = await html2canvas(template, {
+                        scale: 2,
+                        useCORS: true,
+                        backgroundColor: '#ffffff'
+                    });
+
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+                    if (pageAdded) pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                    pageAdded = true;
+                }
+            }
+
+            template.style.display = originalDisplay;
+            setAnnualPrintingContext(null);
 
             if (pageAdded) {
                 pdf.save(`Annual_Salaries_Report_${annualYear}.pdf`);
@@ -401,7 +458,7 @@ export default function Salaries() {
                         </tr>
                     </thead>
                     <tbody>
-                        {records.map((record, idx) => (
+                        {(printingRecords || records).map((record, idx) => (
                             <tr key={record.employeeId} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
                                 <td style={{ padding: '4mm', fontSize: '12px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{record.Employee?.firstName} {record.Employee?.lastName}</td>
                                 <td style={{ padding: '4mm', fontSize: '12px', color: '#64748b', borderBottom: '1px solid #f1f5f9' }}>{record.Employee?.position}</td>
@@ -484,95 +541,84 @@ export default function Salaries() {
                 }
             `}</style>
 
-            {/* Hidden Templates for Annual Report Months */}
-            <div style={{ position: 'absolute', top: '-10000px', left: '-10000px' }}>
-                {Array.from({ length: 12 }, (_, i) => {
-                    const monthStr = (i + 1).toString().padStart(2, '0');
-                    const fullMonth = `${annualYear}-${monthStr}`;
-                    const monthRecords = annualData.filter(r => r.month === fullMonth);
-                    const hasRecords = monthRecords.length > 0;
-
-                    return (
-                        <div
-                            key={fullMonth}
-                            id={`annual-report-${fullMonth}`}
-                            data-has-records={hasRecords}
-                            style={{
-                                padding: '12mm',
-                                backgroundColor: 'white',
-                                width: '210mm',
-                                minHeight: '297mm',
-                                direction: 'rtl',
-                                fontFamily: "'Cairo', sans-serif"
-                            }}
-                        >
-                            {hasRecords && (
-                                <>
-                                    {/* Monthly Header */}
-                                    <div style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        marginBottom: '10mm',
-                                        background: '#0f172a',
-                                        padding: '8mm 12mm',
-                                        borderRadius: '4mm',
-                                        color: 'white'
-                                    }}>
-                                        <div style={{ textAlign: 'right', flex: 1, paddingLeft: '10mm' }}>
-                                            <h1 style={{ margin: 0, fontSize: '30px', fontWeight: '800', color: '#fbbf24' }}>
-                                                تقرير مرتبات شهر {monthStr} / {annualYear}
-                                            </h1>
-                                            <p style={{ margin: '5px 0 0 0', opacity: 0.9, fontSize: '18px' }}>
-                                                التقرير السنوي الشامل - {annualYear}
-                                            </p>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5mm' }}>
-                                            <div style={{ textAlign: 'left' }}>
-                                                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'white' }}>Arab Contractors</h2>
-                                                <p style={{ margin: '2px 0 0 0', color: '#fbbf24', fontSize: '18px', fontWeight: 'bold' }}>Cameroon</p>
-                                            </div>
-                                            <img src={logo} alt="Logo" style={{ height: '18mm', filter: 'brightness(0) invert(1)' }} />
-                                        </div>
-                                    </div>
-
-                                    {/* Table */}
-                                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', marginTop: '2mm', border: '1px solid #e2e8f0', borderRadius: '3mm', overflow: 'hidden', direction: 'rtl' }}>
-                                        <thead>
-                                            <tr style={{ backgroundColor: '#1e293b' }}>
-                                                <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'right', fontWeight: '600' }}>اسم الموظف</td>
-                                                <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'right', fontWeight: '600' }}>الوظيفة</td>
-                                                <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'center', fontWeight: '600' }}>الأيام</td>
-                                                <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'center', fontWeight: '600' }}>الأساسي</td>
-                                                <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'center', fontWeight: '600' }}>الاستقطاع</td>
-                                                <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'center', fontWeight: '600' }}>الصافي</td>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {monthRecords.map((r, idx) => (
-                                                <tr key={r.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                                                    <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{r.Employee?.firstName} {r.Employee?.lastName}</td>
-                                                    <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9' }}>{r.Employee?.position}</td>
-                                                    <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>{r.attendedDays}</td>
-                                                    <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>{r.baseSalary?.toLocaleString()}</td>
-                                                    <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', color: '#ef4444' }}>{r.deductions > 0 ? r.deductions.toLocaleString() : '-'}</td>
-                                                    <td style={{ padding: '4mm', fontSize: '12.5px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', fontWeight: '700', backgroundColor: idx % 2 === 0 ? '#f0f9ff' : '#e0f2fe' }}>{r.netSalary?.toLocaleString()}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-
-                                    {/* Monthly Total */}
-                                    <div style={{ marginTop: '5mm', display: 'flex', justifyContent: 'flex-start', padding: '4mm', background: '#f8fafc', borderRadius: '2mm', border: '1px solid #e2e8f0' }}>
-                                        <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>
-                                            إجمالي صافي الشهر: {monthRecords.reduce((acc, cr) => acc + (cr.netSalary || 0), 0).toLocaleString()}
-                                        </div>
-                                    </div>
-                                </>
-                            )}
+            {/* Dynamic Template for Annual Report */}
+            <div id="annual-report-template" style={{
+                display: 'none', // Hidden by default, toggled during export
+                position: 'fixed',
+                top: '0',
+                left: '0',
+                zIndex: -1000,
+                padding: '12mm',
+                backgroundColor: 'white',
+                width: '210mm',
+                minHeight: '297mm',
+                direction: 'rtl',
+                fontFamily: "'Cairo', sans-serif"
+            }}>
+                {annualPrintingContext && (
+                    <>
+                        {/* Monthly Header */}
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '10mm',
+                            background: '#0f172a',
+                            padding: '8mm 12mm',
+                            borderRadius: '4mm',
+                            color: 'white'
+                        }}>
+                            <div style={{ textAlign: 'right', flex: 1, paddingLeft: '10mm' }}>
+                                <h1 style={{ margin: 0, fontSize: '30px', fontWeight: '800', color: '#fbbf24' }}>
+                                    تقرير مرتبات شهر {annualPrintingContext.month} / {annualPrintingContext.year}
+                                </h1>
+                                <p style={{ margin: '5px 0 0 0', opacity: 0.9, fontSize: '18px' }}>
+                                    التقرير السنوي الشامل - {annualPrintingContext.year}
+                                </p>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5mm' }}>
+                                <div style={{ textAlign: 'left' }}>
+                                    <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'white' }}>Arab Contractors</h2>
+                                    <p style={{ margin: '2px 0 0 0', color: '#fbbf24', fontSize: '18px', fontWeight: 'bold' }}>Cameroon</p>
+                                </div>
+                                <img src={logo} alt="Logo" style={{ height: '18mm', filter: 'brightness(0) invert(1)' }} />
+                            </div>
                         </div>
-                    );
-                })}
+
+                        {/* Table */}
+                        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', marginTop: '2mm', border: '1px solid #e2e8f0', borderRadius: '3mm', overflow: 'hidden', direction: 'rtl' }}>
+                            <thead>
+                                <tr style={{ backgroundColor: '#1e293b' }}>
+                                    <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'right', fontWeight: '600' }}>اسم الموظف</td>
+                                    <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'right', fontWeight: '600' }}>الوظيفة</td>
+                                    <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'center', fontWeight: '600' }}>الأيام</td>
+                                    <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'center', fontWeight: '600' }}>الأساسي</td>
+                                    <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'center', fontWeight: '600' }}>الاستقطاع</td>
+                                    <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'center', fontWeight: '600' }}>الصافي</td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {annualPrintingContext.records.map((r, idx) => (
+                                    <tr key={r.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                                        <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{r.Employee?.firstName} {r.Employee?.lastName}</td>
+                                        <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9' }}>{r.Employee?.position}</td>
+                                        <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>{r.attendedDays}</td>
+                                        <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>{r.baseSalary?.toLocaleString()}</td>
+                                        <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', color: '#ef4444' }}>{r.deductions > 0 ? r.deductions.toLocaleString() : '-'}</td>
+                                        <td style={{ padding: '4mm', fontSize: '12.5px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', fontWeight: '700', backgroundColor: idx % 2 === 0 ? '#f0f9ff' : '#e0f2fe' }}>{r.netSalary?.toLocaleString()}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+
+                        {/* Monthly Total */}
+                        <div style={{ marginTop: '5mm', display: 'flex', justifyContent: 'flex-start', padding: '4mm', background: '#f8fafc', borderRadius: '2mm', border: '1px solid #e2e8f0' }}>
+                            <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>
+                                إجمالي صافي الشهر: {annualPrintingContext.totalRecords.reduce((acc, cr) => acc + (cr.netSalary || 0), 0).toLocaleString()}
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Edit2, Trash2, Plane, Search, Filter, Settings, Check, FileText, Plus, FileDown } from 'lucide-react';
 import VacationReportModal from '../components/VacationReportModal';
@@ -298,60 +298,107 @@ export default function EmployeeList() {
         }
     };
 
-    const generatePDF = async () => {
-        try {
-            setLoading(true);
-            const reportElement = document.getElementById('employee-report-printable');
+    const [printingChunk, setPrintingChunk] = useState(null);
+    const [printingPageNum, setPrintingPageNum] = useState(1);
+    const [isPrinting, setIsPrinting] = useState(false);
+    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
-            if (!reportElement) {
-                console.error("Report element not found");
-                alert("Report template not found!");
-                return;
+    const printRef = useRef(null);
+
+    const generatePDF = async () => {
+        if (sortedEmployees.length === 0) {
+            alert('لا توجد بيانات للتصدير');
+            return;
+        }
+
+        try {
+            setIsGeneratingPDF(true);
+            setIsPrinting(true); // Ensure source is rendered
+
+            // Wait for React to render the source element
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const sourceElement = printRef.current;
+            if (!sourceElement) {
+                console.error("Print ref is null", printRef);
+                throw new Error("Source element not found (ref is null)");
             }
 
-            // Temporarily show the element to capture it
-            reportElement.style.display = 'block';
+            // Prepare Chunks
+            const ROWS_PER_PAGE = 18;
+            const chunks = [];
+            for (let i = 0; i < sortedEmployees.length; i += ROWS_PER_PAGE) {
+                chunks.push(sortedEmployees.slice(i, i + ROWS_PER_PAGE));
+            }
 
-            const canvas = await html2canvas(reportElement, {
-                scale: 2, // Higher quality
-                useCORS: true,
-                logging: false,
-                backgroundColor: '#ffffff'
-            });
-
-            // Hide it again
-            reportElement.style.display = 'none';
-
-            const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('l', 'mm', 'a4'); // Landscape
             const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
+            let pageAdded = false;
 
-            const imgWidth = pdfWidth;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            for (let i = 0; i < chunks.length; i++) {
+                setPrintingChunk(chunks[i]);
+                setPrintingPageNum(i + 1);
 
-            let heightLeft = imgHeight;
-            let position = 0;
+                // Wait for React to update the source element content
+                await new Promise(resolve => setTimeout(resolve, 800));
 
-            // First page
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pdfHeight;
+                // CLONE STRATEGY:
+                // 1. Clone the updated source node
+                const clone = sourceElement.cloneNode(true);
 
-            // Additional pages
-            while (heightLeft > 0) {
-                position = heightLeft - imgHeight;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pdfHeight;
+                // 2. Configure clone styles to ensure visibility and position
+                clone.id = 'temp-print-clone'; // Avoid ID conflict
+                clone.style.position = 'fixed';
+                clone.style.top = '0';
+                clone.style.left = '-10000px'; // Hide off-screen
+                clone.style.zIndex = '99999';
+                clone.style.display = 'block'; // Force visible
+                clone.style.visibility = 'visible';
+
+                // 3. Append to body manually
+                document.body.appendChild(clone);
+
+                try {
+                    // 4. Scroll to top to help html2canvas
+                    window.scrollTo(0, 0);
+
+                    // 5. Capture the CLONE
+                    const canvas = await html2canvas(clone, {
+                        scale: 2, // Higher quality
+                        useCORS: true,
+                        logging: false,
+                        backgroundColor: '#ffffff',
+                        windowWidth: clone.scrollWidth,
+                        windowHeight: clone.scrollHeight
+                    });
+
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+                    if (pageAdded) pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                    pageAdded = true;
+
+                } finally {
+                    // 6. Cleanup clone immediately
+                    if (document.body.contains(clone)) {
+                        document.body.removeChild(clone);
+                    }
+                }
             }
+
+            // Cleanup React State
+            setPrintingChunk(null);
 
             pdf.save(`Employee_Report_${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')}.pdf`);
 
         } catch (error) {
             console.error('Report generation failed:', error);
-            alert('حدث خطأ أثناء إنشاء التقرير: ' + error.message);
+            const errorMsg = error?.message || error?.toString() || 'Unknown error';
+            alert('حدث خطأ أثناء إنشاء التقرير: ' + errorMsg);
         } finally {
-            setLoading(false);
+            setIsPrinting(false);
+            setIsGeneratingPDF(false);
         }
     };
 
@@ -364,6 +411,24 @@ export default function EmployeeList() {
 
     return (
         <div>
+            {isGeneratingPDF && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                    zIndex: 9999,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                }}>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
+                    <p className="text-xl font-semibold text-gray-700">جاري إنشاء التقرير...</p>
+                </div>
+            )}
             <div className="header" style={{ justifyContent: 'flex-end', gap: '0.75rem' }}>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                     <button
@@ -689,20 +754,22 @@ export default function EmployeeList() {
 
                                             return <td key={col.key}>{cellContent}</td>;
                                         })}
-                                        <td style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <Link to={`/employees/${emp.id}/edit`} className="btn btn-secondary" style={{ padding: '0.5rem' }}>
-                                                <Edit2 size={16} />
-                                            </Link>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation(); // Prevent row click
-                                                    setConfirmDelete({ isOpen: true, id: emp.id });
-                                                }}
-                                                className="btn btn-danger"
-                                                style={{ padding: '0.5rem' }}
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                        <td>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <Link to={`/employees/${emp.id}/edit`} className="btn btn-secondary" style={{ padding: '0.5rem' }}>
+                                                    <Edit2 size={16} />
+                                                </Link>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // Prevent row click
+                                                        setConfirmDelete({ isOpen: true, id: emp.id });
+                                                    }}
+                                                    className="btn btn-danger"
+                                                    style={{ padding: '0.5rem' }}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
@@ -728,8 +795,20 @@ export default function EmployeeList() {
                 type={alertModal.type}
             />
 
-            {/* Hidden Printable Report */}
-            <div id="employee-report-printable" style={{ position: 'absolute', top: '-10000px', left: 0, width: '297mm', minHeight: '210mm', background: 'white', padding: '10mm 10mm 30mm 10mm', direction: 'rtl', fontFamily: 'Arial, sans-serif', boxSizing: 'border-box' }}>
+            {/* Hidden Printable Report - Source for Cloning */}
+            <div ref={printRef} id="employee-report-printable" style={{
+                position: 'fixed',
+                left: '-9999px', // Off-screen source
+                top: 0,
+                width: '297mm',
+                minHeight: '210mm',
+                background: 'white',
+                padding: '10mm 10mm 30mm 10mm',
+                direction: 'rtl',
+                fontFamily: 'Arial, sans-serif',
+                boxSizing: 'border-box',
+                display: 'block' // Always block so it has dimensions, but off-screen
+            }}>
                 {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #2980b9', paddingBottom: '10px', marginBottom: '20px' }}>
                     <div style={{ textAlign: 'right' }}>
@@ -741,7 +820,7 @@ export default function EmployeeList() {
 
                 {/* Sub-header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', color: '#34495e', fontSize: '14px' }}>
-                    <div>عدد الموظفين: {sortedEmployees.length}</div>
+                    <div>عدد الموظفين: {sortedEmployees.length} | صفحة {printingPageNum}</div>
                     <div>تاريخ التقرير: {new Date().toLocaleDateString('en-GB')}</div>
                 </div>
 
@@ -758,20 +837,19 @@ export default function EmployeeList() {
                         </tr>
                     </thead>
                     <tbody>
-                        {sortedEmployees.map((emp, index) => (
-                            <tr key={emp._id} style={{ backgroundColor: index % 2 === 0 ? '#f9f9f9' : 'white' }}>
-                                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{index + 1}</td>
+                        {(printingChunk || []).map((emp, index) => (
+                            <tr key={emp._id || emp.id} style={{ backgroundColor: index % 2 === 0 ? '#f9f9f9' : 'white' }}>
+                                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                    {/* Calculate global index */}
+                                    {sortedEmployees.findIndex(e => e.id === emp.id) + 1}
+                                </td>
                                 {availableColumns.filter(col => visibleColumns.includes(col.key)).map(col => {
                                     let content = emp[col.key] || '-';
 
                                     if (col.key === 'name') {
-                                        // content = `${emp.firstName} ${emp.lastName}`; // This line is now redundant
                                         return (
                                             <td key={col.key} style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'right', fontWeight: 'bold' }}>
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium text-gray-900">{emp.firstName} {emp.lastName}</span>
-                                                    <span className="text-xs text-gray-400">{emp.position}</span>
-                                                </div>
+                                                <span style={{ display: 'block', color: '#111827', fontSize: '14px' }}>{emp.firstName} {emp.lastName}</span>
                                             </td>
                                         );
                                     }
@@ -788,7 +866,7 @@ export default function EmployeeList() {
                                             'Divorced': 'مطلق',
                                             'Widowed': 'أرمل'
                                         };
-                                        content = statusMap[content] || content;
+                                        content = statusMap[content] || content || '-';
                                     }
 
                                     if (col.key === 'residence') {
@@ -802,7 +880,7 @@ export default function EmployeeList() {
                                     }
 
                                     return (
-                                        <td key={col.key} style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                        <td key={col.key} style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center', direction: 'rtl', unicodeBidi: 'embed' }}>
                                             {content}
                                         </td>
                                     );
