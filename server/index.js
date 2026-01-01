@@ -1052,6 +1052,10 @@ app.delete('/api/employees/:id', async (req, res) => {
     try {
         const employee = await Employee.findByPk(req.params.id);
         if (employee) {
+            // Decouple Rooms manually to prevent Foreign Key Constraint errors
+            await Room.update({ permanentResidentId: null }, { where: { permanentResidentId: req.params.id } });
+            await Room.update({ temporaryResidentId: null }, { where: { temporaryResidentId: req.params.id } });
+
             await employee.destroy();
             res.status(204).send();
         } else {

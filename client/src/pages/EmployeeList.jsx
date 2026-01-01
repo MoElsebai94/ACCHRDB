@@ -295,6 +295,7 @@ export default function EmployeeList() {
             setConfirmDelete({ isOpen: false, id: null });
         } catch (error) {
             console.error('Error deleting employee:', error);
+            alert('حدث خطأ أثناء حذف الموظف. الرجاء المحاولة مرة أخرى.');
         }
     };
 

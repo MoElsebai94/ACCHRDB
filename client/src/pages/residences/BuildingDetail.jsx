@@ -180,7 +180,7 @@ export default function BuildingDetail() {
                     <h1>{building.name}</h1>
                     <p>إدارة الشقق والغرف</p>
                 </div>
-                <button className="btn-primary" onClick={() => setShowAptModal(true)}>
+                <button className="btn btn-primary" onClick={() => setShowAptModal(true)}>
                     <Plus size={18} />
                     إضافة شقة
                 </button>
@@ -207,7 +207,7 @@ export default function BuildingDetail() {
                                     </button>
                                 </div>
                             </div>
-                            <button className="btn-secondary btn-sm" onClick={() => {
+                            <button className="btn btn-secondary btn-sm" onClick={() => {
                                 setSelectedAptId(apt.id);
                                 setShowRoomModal(true);
                             }}>
@@ -336,8 +336,8 @@ export default function BuildingDetail() {
                                 <input type="text" required value={newAptNumber} onChange={(e) => setNewAptNumber(e.target.value)} />
                             </div>
                             <div className="modal-footer">
-                                <button type="button" className="btn-secondary" onClick={() => setShowAptModal(false)}>إلغاء</button>
-                                <button type="submit" className="btn-primary">حفظ</button>
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowAptModal(false)}>إلغاء</button>
+                                <button type="submit" className="btn btn-primary">حفظ</button>
                             </div>
                         </form>
                     </div>
@@ -354,8 +354,8 @@ export default function BuildingDetail() {
                                 <input type="text" required value={newRoomNumber} onChange={(e) => setNewRoomNumber(e.target.value)} />
                             </div>
                             <div className="modal-footer">
-                                <button type="button" className="btn-secondary" onClick={() => setShowRoomModal(false)}>إلغاء</button>
-                                <button type="submit" className="btn-primary">حفظ</button>
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowRoomModal(false)}>إلغاء</button>
+                                <button type="submit" className="btn btn-primary">حفظ</button>
                             </div>
                         </form>
                     </div>
@@ -387,8 +387,8 @@ export default function BuildingDetail() {
                                 />
                             </div>
                             <div className="modal-footer">
-                                <button type="button" className="btn-secondary" onClick={() => setShowAssignModal(false)}>إلغاء</button>
-                                <button type="submit" className="btn-primary">تسكين</button>
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowAssignModal(false)}>إلغاء</button>
+                                <button type="submit" className="btn btn-primary">تسكين</button>
                             </div>
                         </form>
                     </div>
@@ -428,8 +428,8 @@ export default function BuildingDetail() {
                                 />
                             </div>
                             <div className="modal-footer">
-                                <button type="button" className="btn-secondary" onClick={() => setEditModal({ isOpen: false, type: '', id: null, value: '' })}>إلغاء</button>
-                                <button type="submit" className="btn-primary">حفظ</button>
+                                <button type="button" className="btn btn-secondary" onClick={() => setEditModal({ isOpen: false, type: '', id: null, value: '' })}>إلغاء</button>
+                                <button type="submit" className="btn btn-primary">حفظ</button>
                             </div>
                         </form>
                     </div>
