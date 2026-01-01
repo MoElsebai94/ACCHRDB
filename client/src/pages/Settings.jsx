@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Database, Download, ShieldCheck, HardDrive, Info, AlertCircle, CheckCircle2, ChevronLeft } from 'lucide-react';
 import { API_URL } from '../utils/api';
 
+
 export default function Settings() {
     const [dbInfo, setDbInfo] = useState(null);
     const [isBackingUp, setIsBackingUp] = useState(false);
@@ -182,7 +183,7 @@ export default function Settings() {
                     <div style={{ display: 'flex', gap: '3rem', fontSize: '0.9rem' }}>
                         <div>
                             <span style={{ color: '#64748b' }}>إصدار التطبيق:</span>
-                            <span style={{ marginInlineStart: '0.5rem', fontWeight: '500' }}>1.0.0 (Gold)</span>
+                            <span style={{ marginInlineStart: '0.5rem', fontWeight: '500' }}>v{import.meta.env.PACKAGE_VERSION}</span>
                         </div>
                         <div>
                             <span style={{ color: '#64748b' }}>بيئة التشغيل:</span>
