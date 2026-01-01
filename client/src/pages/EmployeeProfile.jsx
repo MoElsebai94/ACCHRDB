@@ -268,7 +268,7 @@ export default function EmployeeProfile() {
     if (!employee) return <div>Employee not found.</div>;
 
     return (
-        <div>
+        <div className="page-container" dir="rtl">
             <div className="header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <Link to="/employees" className="btn btn-secondary" style={{ padding: '0.5rem' }}>

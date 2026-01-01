@@ -93,7 +93,14 @@ export default function Dashboard() {
     if (loading) return <PageLoading />;
 
     return (
-        <div>
+        <div className="page-container" dir="rtl">
+            <div className="page-header">
+                <div className="header-info">
+                    <h1>لوحة المعلومات</h1>
+                    <p>نظرة عامة على الموظفين والأقسام والاستراحات</p>
+                </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                 <div className="card">
                     <h3 style={{ fontSize: '1.1rem' }}>إجمالي الموظفين</h3>

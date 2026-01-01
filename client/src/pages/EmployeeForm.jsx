@@ -317,7 +317,7 @@ export default function EmployeeForm() {
     };
 
     return (
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+        <div className="page-container" style={{ maxWidth: '600px', margin: '0 auto' }}>
             <h1 style={{ marginBottom: '1.5rem' }}>{isEditMode ? 'تعديل بيانات الموظف' : 'إضافة موظف جديد'}</h1>
             <form onSubmit={handleSubmit} className="card">
                 {/* Photo Upload Section */}

@@ -416,7 +416,7 @@ export default function EmployeeList() {
     if (loading) return <PageLoading />;
 
     return (
-        <div>
+        <div className="page-container" dir="rtl">
             {isGeneratingPDF && (
                 <div style={{
                     position: 'fixed',

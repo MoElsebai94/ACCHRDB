@@ -247,7 +247,7 @@ export default function DepartmentList() {
     if (loading) return <PageLoading />;
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div className="page-container" style={{ maxWidth: '800px', margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
                     <FolderTree size={32} color="#3b82f6" />
