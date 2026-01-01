@@ -13,6 +13,10 @@ export default function Salaries() {
     const [isSaving, setIsSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [alert, setAlert] = useState(null);
+    const [annualYear, setAnnualYear] = useState(new Date().getFullYear().toString());
+    const [isExportingAnnual, setIsExportingAnnual] = useState(false);
+    const [annualData, setAnnualData] = useState([]);
+
     useEffect(() => {
         fetchSalaries();
     }, [month]);
@@ -103,6 +107,71 @@ export default function Salaries() {
         }
     };
 
+    const handleExportAnnualPDF = async () => {
+        setIsExportingAnnual(true);
+        try {
+            const res = await fetch(`${API_URL}/salaries/year?year=${annualYear}`);
+            const data = await res.json();
+
+            if (!data || data.length === 0) {
+                setAlert({ type: 'error', message: 'لا توجد بيانات مرتبات لهذه السنة' });
+                setTimeout(() => setAlert(null), 3000);
+                setIsExportingAnnual(false);
+                return;
+            }
+
+            setAnnualData(data);
+
+            // Wait for state to update and hidden template to be ready
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const months = Array.from({ length: 12 }, (_, i) => {
+                const m = (i + 1).toString().padStart(2, '0');
+                return `${annualYear}-${m}`;
+            });
+
+            let pageAdded = false;
+
+            for (const m of months) {
+                const element = document.getElementById(`annual-report-${m}`);
+                if (!element || element.getAttribute('data-has-records') === 'false') continue;
+
+                // Make visible temporarily for capture
+                element.style.display = 'block';
+
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                });
+
+                element.style.display = 'none';
+
+                const imgData = canvas.toDataURL('image/png');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+                if (pageAdded) pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pageAdded = true;
+            }
+
+            if (pageAdded) {
+                pdf.save(`Annual_Salaries_Report_${annualYear}.pdf`);
+            } else {
+                setAlert({ type: 'error', message: 'لا توجد سجلات مكتملة للتصدير' });
+                setTimeout(() => setAlert(null), 3000);
+            }
+        } catch (error) {
+            console.error('Error exporting annual PDF:', error);
+            setAlert({ type: 'error', message: 'حدث خطأ أثناء تصدير التقرير السنوي' });
+            setTimeout(() => setAlert(null), 3000);
+        } finally {
+            setIsExportingAnnual(false);
+        }
+    };
+
     const filteredRecords = records.filter(r => {
         const emp = r.Employee;
         if (!emp) return false;
@@ -121,6 +190,20 @@ export default function Salaries() {
                     <p>تسجيل وإدارة المرتبات الشهرية للموظفين</p>
                 </div>
                 <div className="header-actions">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', padding: '0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <select
+                            className="table-input"
+                            style={{ width: '100px', padding: '0.25rem' }}
+                            value={annualYear}
+                            onChange={(e) => setAnnualYear(e.target.value)}
+                        >
+                            {[2024, 2025, 2026].map(y => <option key={y} value={y.toString()}>{y}</option>)}
+                        </select>
+                        <button className="btn btn-secondary" onClick={handleExportAnnualPDF} disabled={isExportingAnnual}>
+                            <Download size={18} />
+                            {isExportingAnnual ? 'جاري التحضير...' : 'تقرير سنوي'}
+                        </button>
+                    </div>
                     <button className="btn btn-secondary" onClick={handleExportPDF}>
                         <FileText size={18} />
                         تصدير PDF
@@ -400,6 +483,97 @@ export default function Salaries() {
                     border-radius: 8px;
                 }
             `}</style>
+
+            {/* Hidden Templates for Annual Report Months */}
+            <div style={{ position: 'absolute', top: '-10000px', left: '-10000px' }}>
+                {Array.from({ length: 12 }, (_, i) => {
+                    const monthStr = (i + 1).toString().padStart(2, '0');
+                    const fullMonth = `${annualYear}-${monthStr}`;
+                    const monthRecords = annualData.filter(r => r.month === fullMonth);
+                    const hasRecords = monthRecords.length > 0;
+
+                    return (
+                        <div
+                            key={fullMonth}
+                            id={`annual-report-${fullMonth}`}
+                            data-has-records={hasRecords}
+                            style={{
+                                padding: '12mm',
+                                backgroundColor: 'white',
+                                width: '210mm',
+                                minHeight: '297mm',
+                                direction: 'rtl',
+                                fontFamily: "'Cairo', sans-serif"
+                            }}
+                        >
+                            {hasRecords && (
+                                <>
+                                    {/* Monthly Header */}
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        marginBottom: '10mm',
+                                        background: '#0f172a',
+                                        padding: '8mm 12mm',
+                                        borderRadius: '4mm',
+                                        color: 'white'
+                                    }}>
+                                        <div style={{ textAlign: 'right', flex: 1, paddingLeft: '10mm' }}>
+                                            <h1 style={{ margin: 0, fontSize: '30px', fontWeight: '800', color: '#fbbf24' }}>
+                                                تقرير مرتبات شهر {monthStr} / {annualYear}
+                                            </h1>
+                                            <p style={{ margin: '5px 0 0 0', opacity: 0.9, fontSize: '18px' }}>
+                                                التقرير السنوي الشامل - {annualYear}
+                                            </p>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5mm' }}>
+                                            <div style={{ textAlign: 'left' }}>
+                                                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'white' }}>Arab Contractors</h2>
+                                                <p style={{ margin: '2px 0 0 0', color: '#fbbf24', fontSize: '18px', fontWeight: 'bold' }}>Cameroon</p>
+                                            </div>
+                                            <img src={logo} alt="Logo" style={{ height: '18mm', filter: 'brightness(0) invert(1)' }} />
+                                        </div>
+                                    </div>
+
+                                    {/* Table */}
+                                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0', marginTop: '2mm', border: '1px solid #e2e8f0', borderRadius: '3mm', overflow: 'hidden', direction: 'rtl' }}>
+                                        <thead>
+                                            <tr style={{ backgroundColor: '#1e293b' }}>
+                                                <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'right', fontWeight: '600' }}>اسم الموظف</td>
+                                                <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'right', fontWeight: '600' }}>الوظيفة</td>
+                                                <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'center', fontWeight: '600' }}>الأيام</td>
+                                                <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'center', fontWeight: '600' }}>الأساسي</td>
+                                                <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'center', fontWeight: '600' }}>الاستقطاع</td>
+                                                <td style={{ padding: '4mm', color: '#fbbf24', fontSize: '14px', textAlign: 'center', fontWeight: '600' }}>الصافي</td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {monthRecords.map((r, idx) => (
+                                                <tr key={r.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                                                    <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{r.Employee?.firstName} {r.Employee?.lastName}</td>
+                                                    <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9' }}>{r.Employee?.position}</td>
+                                                    <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>{r.attendedDays}</td>
+                                                    <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>{r.baseSalary?.toLocaleString()}</td>
+                                                    <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', color: '#ef4444' }}>{r.deductions > 0 ? r.deductions.toLocaleString() : '-'}</td>
+                                                    <td style={{ padding: '4mm', fontSize: '12.5px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', fontWeight: '700', backgroundColor: idx % 2 === 0 ? '#f0f9ff' : '#e0f2fe' }}>{r.netSalary?.toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+
+                                    {/* Monthly Total */}
+                                    <div style={{ marginTop: '5mm', display: 'flex', justifyContent: 'flex-start', padding: '4mm', background: '#f8fafc', borderRadius: '2mm', border: '1px solid #e2e8f0' }}>
+                                        <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>
+                                            إجمالي صافي الشهر: {monthRecords.reduce((acc, cr) => acc + (cr.netSalary || 0), 0).toLocaleString()}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }

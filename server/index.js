@@ -378,6 +378,30 @@ app.get('/api/salaries/init', async (req, res) => {
     }
 });
 
+app.get('/api/salaries/year', async (req, res) => {
+    try {
+        const { year } = req.query;
+        if (!year) return res.status(400).json({ error: 'Year is required (YYYY)' });
+
+        const { Op } = require('sequelize');
+        const salaries = await Salary.findAll({
+            where: {
+                month: {
+                    [Op.like]: `${year}-%`
+                }
+            },
+            include: [{
+                model: Employee,
+                attributes: ['id', 'firstName', 'lastName', 'position', 'salary', 'isActive', 'department']
+            }],
+            order: [['month', 'ASC']]
+        });
+        res.json(salaries);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/api/salaries/bulk', async (req, res) => {
     try {
         const { month, records } = req.body;
@@ -1100,6 +1124,10 @@ const runMigrations = async () => {
         }
         console.log('Schema check: Employee columns verified.');
 
+        // Standard sync for other tables (safe, doesn't alter existing columns)
+        await sequelize.sync();
+        console.log('Database sync successful.');
+
         // Migration for Vacations table
         const [vacResults] = await sequelize.query("PRAGMA table_info(Vacations);");
         const existingVacColumns = vacResults.map(col => col.name);
@@ -1108,9 +1136,6 @@ const runMigrations = async () => {
             await sequelize.query("ALTER TABLE Vacations ADD COLUMN travelDate VARCHAR(255);");
         }
 
-        // Standard sync for other tables (safe, doesn't alter existing columns)
-        await sequelize.sync();
-        console.log('Database sync successful.');
         startServer();
     } catch (error) {
         console.error('Startup/Migration failed:', error);
