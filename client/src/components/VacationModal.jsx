@@ -488,7 +488,7 @@ export default function VacationModal({ isOpen, onClose, onConfirm, onDelete, em
                                 <td style={{ border: '1px solid #000', padding: '10px', fontSize: '16px', textAlign: 'center', direction: 'rtl', unicodeBidi: 'embed', letterSpacing: 'normal' }}>
                                     {regular > 0 ? regular : '...'}
                                 </td>
-                                <td style={{ border: '1px solid #000', padding: '10px', fontSize: '16px', textAlign: 'center', direction: 'rtl', unicodeBidi: 'embed', letterSpacing: 'normal' }}>{formatDate(travelDate)}</td>
+                                <td style={{ border: '1px solid #000', padding: '10px', fontSize: '16px', textAlign: 'center', direction: 'rtl', unicodeBidi: 'embed', letterSpacing: 'normal' }}>{formatDate(vacationStartDateStr)}</td>
                                 <td style={{ border: '1px solid #000', padding: '10px', fontSize: '16px', textAlign: 'center', direction: 'rtl', unicodeBidi: 'embed', letterSpacing: 'normal' }}>{formatDate(regularEndDateStr)}</td>
                             </tr>
                             {deduction > 0 && (
