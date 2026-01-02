@@ -612,6 +612,14 @@ app.get('/api/settings/backup', async (req, res) => {
             return res.status(404).json({ error: 'Database file not found' });
         }
 
+        // FORCE CHECKPOINT to ensure WAL is merged into main DB file
+        try {
+            await sequelize.query('PRAGMA wal_checkpoint(FULL);');
+            console.log('WAL Checkpoint complete before backup.');
+        } catch (dbErr) {
+            console.error('Checkpoint failed (proceeding with file copy):', dbErr);
+        }
+
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `backup-gomaadb-${timestamp}.sqlite`;
 
