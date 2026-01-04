@@ -247,6 +247,44 @@ app.post('/api/vacations', async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 });
+
+// --- Bulk Import (Moved to top to avoid shadowing) ---
+app.post('/api/employees/bulk', async (req, res) => {
+    console.log('Bulk Import Request Received'); // DEBUG LOG
+    try {
+        const employeesData = req.body;
+        if (!Array.isArray(employeesData) || employeesData.length === 0) {
+            return res.status(400).json({ error: 'Invalid or empty data provided' });
+        }
+
+        const createdEmployees = await Employee.bulkCreate(employeesData, {
+            validate: true
+        });
+
+        res.status(201).json({
+            message: 'Successfully imported employees',
+            count: createdEmployees.length
+        });
+
+    } catch (error) {
+        console.error('Bulk Import Error:', error);
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            const fields = error.errors.map(e => e.path).join(', ');
+            return res.status(400).json({
+                error: `بيانات مكررة: ${fields} موجود بالفعل.`,
+                details: error.errors.map(e => e.message)
+            });
+        }
+        if (error.name === 'AggregateError' || error.errors) {
+            const messages = error.errors.map(e => e.message || e.error?.message).join(', ');
+            return res.status(400).json({
+                error: 'Validation Error: ' + messages,
+                details: error.errors
+            });
+        }
+        res.status(400).json({ error: error.message });
+    }
+});
 app.delete('/api/cost-centers/:id', async (req, res) => {
     try {
         const result = await CostCenter.destroy({ where: { id: req.params.id } });
@@ -982,6 +1020,9 @@ app.get('/api/employees/:id', async (req, res) => {
 });
 
 // Create employee
+// Bulk Import Employees
+
+
 app.post('/api/employees', async (req, res) => {
     try {
         const employeeData = { ...req.body };

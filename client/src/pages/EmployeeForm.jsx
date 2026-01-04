@@ -154,7 +154,7 @@ export default function EmployeeForm() {
 
                 // Constraint: Only 1 person in Root (if it's a leaf root)
                 // Note: Cyclic orphans treated as roots (level 0) will also get this check effectively if we pass level=0 for them.
-                if (level === 0) {
+                if (level === 0 && node.name === 'المدير العام') {
                     const occupierId = occupiedRoots[node.name];
                     if (occupierId) {
                         // If occupied by someone else

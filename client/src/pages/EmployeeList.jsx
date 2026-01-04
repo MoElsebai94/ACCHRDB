@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Edit2, Trash2, Plane, Search, Filter, Settings, Check, FileText, Plus, FileDown } from 'lucide-react';
+import { Edit2, Trash2, Plane, Search, Filter, Settings, Check, FileText, Plus, FileDown, FileSpreadsheet } from 'lucide-react';
+import BulkImportModal from '../components/BulkImportModal';
 import VacationReportModal from '../components/VacationReportModal';
 import { API_URL } from '../utils/api';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -31,6 +32,7 @@ export default function EmployeeList() {
     const [showColumnMenu, setShowColumnMenu] = useState(false);
     const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', type: 'error' });
     const [showReportModal, setShowReportModal] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     const availableColumns = [
         { key: 'name', label: 'الاسم', alwaysVisible: true },
@@ -481,6 +483,14 @@ export default function EmployeeList() {
                     >
                         <FileText size={18} />
                         <span>تصدير تقرير (PDF)</span>
+                    </button>
+                    <button
+                        className="btn btn-secondary"
+                        onClick={() => setIsImportModalOpen(true)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                        <FileSpreadsheet size={18} />
+                        <span>استيراد (Excel)</span>
                     </button>
                     <Link to="/employees/new" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Plus size={18} />
@@ -984,6 +994,15 @@ export default function EmployeeList() {
                 onClose={() => setShowReportModal(false)}
                 employees={sortedEmployees}
                 departments={departments}
+            />
+            <BulkImportModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onSuccess={() => {
+                    fetchEmployees();
+                    setIsImportModalOpen(false);
+                }}
+                departments={departments || []}
             />
         </div >
     );
