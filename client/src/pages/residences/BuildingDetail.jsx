@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { useParams, Link } from 'react-router-dom';
 import { ChevronRight, Plus, Home, User, Calendar, Trash2, UserPlus, UserMinus, AlertCircle, Edit2 } from 'lucide-react';
 import { API_URL } from '../../utils/api';
@@ -326,7 +327,7 @@ export default function BuildingDetail() {
             </div>
 
             {/* Modals ... */}
-            {showAptModal && (
+            {showAptModal && ReactDOM.createPortal(
                 <div className="modal-overlay">
                     <div className="modal-content" style={{ maxWidth: '400px' }}>
                         <div className="modal-header"><h2>إضافة شقة</h2></div>
@@ -341,10 +342,11 @@ export default function BuildingDetail() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
-            {showRoomModal && (
+            {showRoomModal && ReactDOM.createPortal(
                 <div className="modal-overlay">
                     <div className="modal-content" style={{ maxWidth: '400px' }}>
                         <div className="modal-header"><h2>إضافة غرفة</h2></div>
@@ -359,10 +361,11 @@ export default function BuildingDetail() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
-            {showAssignModal && (
+            {showAssignModal && ReactDOM.createPortal(
                 <div className="modal-overlay">
                     <div className="modal-content" style={{ maxWidth: '500px' }}>
                         <div className="modal-header">
@@ -392,7 +395,8 @@ export default function BuildingDetail() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             <ConfirmationModal
@@ -411,7 +415,7 @@ export default function BuildingDetail() {
                 message={confirmDelete.message}
             />
 
-            {editModal.isOpen && (
+            {editModal.isOpen && ReactDOM.createPortal(
                 <div className="modal-overlay">
                     <div className="modal-content" style={{ maxWidth: '400px' }}>
                         <div className="modal-header">
@@ -433,7 +437,8 @@ export default function BuildingDetail() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             <style>{`

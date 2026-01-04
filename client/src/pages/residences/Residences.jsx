@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Plus, Building as BuildingIcon, Users, Trash2 } from 'lucide-react';
 import { logoBase64 } from '../../assets/logoBase64';
@@ -315,7 +316,7 @@ export default function Residences() {
             </div>
 
             {
-                showAddModal && (
+                showAddModal && ReactDOM.createPortal(
                     <div style={{
                         position: 'fixed',
                         top: 0,
@@ -432,7 +433,8 @@ export default function Residences() {
                                 </div>
                             </form>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 )
             }
 

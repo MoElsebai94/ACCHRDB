@@ -1,10 +1,11 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
 
 export default function ConfirmationModal({ isOpen, onClose, onConfirm, title, message }) {
     if (!isOpen) return null;
 
-    return (
+    return ReactDOM.createPortal(
         <div style={{
             position: 'fixed',
             top: 0,
@@ -82,6 +83,7 @@ export default function ConfirmationModal({ isOpen, onClose, onConfirm, title, m
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
