@@ -51,7 +51,7 @@ export default function Residences() {
         }
     };
 
-    const handleDeleteBuilding = async (e) => {
+    const handleDeleteBuilding = async () => {
         const id = confirmDelete.id;
         try {
             const res = await fetch(`${API_URL}/residences/buildings/${id}`, {

@@ -11,9 +11,6 @@ let serverProcess;
 if (process.env.PORTABLE_EXECUTABLE_DIR) {
     // Running as generic Portable App (e.g. from Flash Drive)
     app.setPath('userData', path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'gomaadb_data'));
-} else if (process.platform === 'win32' && app.isPackaged) {
-    // Running as installed/unpacked on Windows - keep data with exe
-    app.setPath('userData', path.join(path.dirname(app.getPath('exe')), 'gomaadb_data'));
 }
 
 const userDataPath = app.getPath('userData');

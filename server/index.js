@@ -1155,6 +1155,12 @@ const startServer = () => {
 
 const runMigrations = async () => {
     try {
+        // 1. Sync Database FIRST to ensure tables exist
+        await sequelize.sync();
+        console.log('Database sync successful.');
+
+        // 2. Run Manual Migrations (Add missing columns to existing tables)
+
         // Manually check/add parentId to Departments for robustness
         const [results] = await sequelize.query("PRAGMA table_info(Departments);");
         const hasParentId = results.some(col => col.name === 'parentId');
@@ -1205,10 +1211,6 @@ const runMigrations = async () => {
         }
         console.log('Schema check: Employee columns verified.');
 
-        // Standard sync for other tables (safe, doesn't alter existing columns)
-        await sequelize.sync();
-        console.log('Database sync successful.');
-
         // Migration for Vacations table
         const [vacResults] = await sequelize.query("PRAGMA table_info(Vacations);");
         const existingVacColumns = vacResults.map(col => col.name);
@@ -1225,5 +1227,7 @@ const runMigrations = async () => {
         startServer();
     }
 };
+
+
 
 runMigrations();

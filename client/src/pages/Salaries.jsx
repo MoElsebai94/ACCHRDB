@@ -26,11 +26,17 @@ export default function Salaries() {
         setIsLoading(true);
         try {
             const res = await fetch(`${API_URL}/salaries/init?month=${month}`);
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Failed to fetch salaries');
+            }
             const data = await res.json();
-            setRecords(data);
+            setRecords(Array.isArray(data) ? data : []);
             setIsLoading(false);
         } catch (error) {
             console.error('Error fetching salaries:', error);
+            setAlert({ type: 'error', message: 'فشل تحميل بيانات المرتبات: ' + error.message });
+            setRecords([]);
             setIsLoading(false);
         }
     };
@@ -163,10 +169,11 @@ export default function Salaries() {
         setPdfProgress(0);
         try {
             const res = await fetch(`${API_URL}/salaries/year?year=${annualYear}`);
+            if (!res.ok) throw new Error('Failed to fetch annual data');
             const data = await res.json();
 
-            if (!data || data.length === 0) {
-                setAlert({ type: 'error', message: 'لا توجد بيانات مرتبات لهذه السنة' });
+            if (!Array.isArray(data) || data.length === 0) {
+                setAlert({ type: 'error', message: 'لا توجد بيانات مرتبات لهذه المقاييس' });
                 setTimeout(() => setAlert(null), 3000);
                 setIsExportingAnnual(false);
                 return;
