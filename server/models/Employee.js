@@ -23,11 +23,11 @@ const Employee = sequelize.define('Employee', {
   },
   position: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   department: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   costCenter: {
     type: DataTypes.STRING,
@@ -35,31 +35,31 @@ const Employee = sequelize.define('Employee', {
   },
   salary: {
     type: DataTypes.FLOAT,
-    allowNull: false
+    allowNull: true
   },
   dateHired: {
     type: DataTypes.DATEONLY,
-    allowNull: false
+    allowNull: true
   },
   fixedNumber: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   jobRole: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   contractStartDate: {
     type: DataTypes.DATEONLY,
-    allowNull: false
+    allowNull: true
   },
   contractEndDate: {
     type: DataTypes.DATEONLY,
-    allowNull: false
+    allowNull: true
   },
   arrivalDate: {
     type: DataTypes.DATEONLY,
-    allowNull: false
+    allowNull: true
   },
   vacationReturnDate: {
     type: DataTypes.DATEONLY,
@@ -142,6 +142,10 @@ const Employee = sequelize.define('Employee', {
     allowNull: true
   },
   travelDate: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
+  },
+  birthDate: {
     type: DataTypes.DATEONLY,
     allowNull: true
   }

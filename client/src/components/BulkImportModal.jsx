@@ -66,16 +66,22 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess, department
 
     // --- Template Generation ---
     const handleDownloadTemplate = () => {
-        const headers = Object.keys(fieldMapping);
+        // Reverse headers for RTL Arabic layout (rightmost column = first field)
+        const headers = Object.keys(fieldMapping).reverse();
+        const exampleData = ['أحمد محمد', 'مهندس', 'Full Time', 'بكالوريوس', 'المقر الرئيسي', '5000', 'القاهرة', '01000000000', '23700000000', '', 'ahmed@example.com', '2024-01-01', '2024-01-01', '2025-01-01', '1990-01-01', '2024-01-15'].reverse();
+
         const ws = XLSX.utils.aoa_to_sheet([
             headers,
-            // Example Row:
-            ['أحمد محمد', 'مهندس', 'Full Time', 'بكالوريوس', 'المقر الرئيسي', '5000', 'القاهرة', '01000000000', '23700000000', '', 'ahmed@example.com', '2024-01-01', '2024-01-01', '2025-01-01', '1990-01-01', '2024-01-15']
+            // Example Row (reversed for RTL):
+            exampleData
         ]);
 
         // Auto-width columns
         const wscols = headers.map(h => ({ wch: h.length + 5 }));
         ws['!cols'] = wscols;
+
+        // Set RTL view for the sheet
+        ws['!views'] = [{ RTL: true }];
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Employees");
@@ -153,24 +159,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess, department
                 }
             });
 
-            // Handle Mandatory DB Fields Defaults (to allow import of partial data)
-            if (!newRow.fixedNumber) newRow.fixedNumber = "-";
-            if (!newRow.salary) newRow.salary = 0;
-
-            // Dates: If missing, default to today (Model requires these)
-            const today = new Date().toISOString().split('T')[0];
-            if (!newRow.dateHired) newRow.dateHired = today;
-            if (!newRow.contractStartDate) newRow.contractStartDate = today;
-            if (!newRow.contractEndDate) newRow.contractEndDate = today;
-            if (!newRow.arrivalDate) newRow.arrivalDate = today;
-            if (!newRow.jobRole) newRow.jobRole = "General";
-
-            // Department Default
-            if (!newRow.department) {
-                newRow.department = "غير محدد";
-            }
-
-            // Map Status - default to Active
+            // Default to Active status
             newRow.isActive = true;
 
             processed.push({ ...newRow, _rowNum: index + 2, _error: hasError ? rowErrorMsg : null });

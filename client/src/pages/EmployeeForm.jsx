@@ -239,17 +239,9 @@ export default function EmployeeForm() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Basic validation - check all fields except email and vacationReturnDate
-        // If inactive, salary is not required/can be zero/empty string
-        const requiredFields = ['fullName', 'position', 'department', 'dateHired', 'fixedNumber', 'jobRole', 'contractStartDate', 'arrivalDate'];
-        if (formData.isActive) {
-            requiredFields.push('salary');
-        }
-
-        const missing = requiredFields.filter(f => !formData[f] || (typeof formData[f] === 'string' && !formData[f].trim()));
-
-        if (missing.length > 0) {
-            alert('يرجى ملء جميع الحقول المطلوبة');
+        // Basic validation - only fullName is required
+        if (!formData.fullName || !formData.fullName.trim()) {
+            alert('يرجى إدخال الاسم الكامل');
             return;
         }
 
@@ -600,9 +592,8 @@ export default function EmployeeForm() {
                         <input
                             className="input-field"
                             name="position"
-                            value={formData.position}
+                            value={formData.position || ''}
                             onChange={handleChange}
-                            required
                         />
                     </div>
                     <div className="input-group">
@@ -622,7 +613,6 @@ export default function EmployeeForm() {
                             name="jobRole"
                             value={formData.jobRole || ''}
                             onChange={handleChange}
-                            required
                         />
                     </div>
                     <div className="input-group">
@@ -632,7 +622,6 @@ export default function EmployeeForm() {
                             name="fixedNumber"
                             value={formData.fixedNumber || ''}
                             onChange={handleChange}
-                            required
                         />
                     </div>
                 </div>
@@ -644,9 +633,8 @@ export default function EmployeeForm() {
                             className="input-field"
                             type="number"
                             name="salary"
-                            value={formData.salary}
+                            value={formData.salary || ''}
                             onChange={handleChange}
-                            required={(formData.isActive || false)} // Salary not required if inactive (disabled)
                             disabled={!formData.isActive}
                             style={{
                                 background: !formData.isActive ? '#f1f5f9' : 'white',
@@ -660,9 +648,8 @@ export default function EmployeeForm() {
                             className="input-field"
                             type="date"
                             name="dateHired"
-                            value={formData.dateHired}
+                            value={formData.dateHired || ''}
                             onChange={handleChange}
-                            required
                         />
                     </div>
                 </div>
@@ -676,7 +663,6 @@ export default function EmployeeForm() {
                             name="contractStartDate"
                             value={formData.contractStartDate || ''}
                             onChange={handleChange}
-                            required
                         />
                     </div>
                     <div className="input-group">
@@ -687,7 +673,6 @@ export default function EmployeeForm() {
                             name="arrivalDate"
                             value={formData.arrivalDate || ''}
                             onChange={handleChange}
-                            required
                         />
                     </div>
                 </div>
