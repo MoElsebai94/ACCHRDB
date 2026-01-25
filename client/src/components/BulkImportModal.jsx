@@ -16,8 +16,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess, department
     // --- Arabic Field Mapping ---
     // --- Arabic Field Mapping (Simplified & Verified) ---
     const fieldMapping = {
-        'الاسم الأول': 'firstName',
-        'اسم العائلة': 'lastName',
+        'الاسم الكامل': 'fullName',
         'المسمى الوظيفي': 'position',
         'الوظيفة': 'jobRole',
         'المؤهل': 'qualification',
@@ -70,8 +69,8 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess, department
         const headers = Object.keys(fieldMapping);
         const ws = XLSX.utils.aoa_to_sheet([
             headers,
-            // Example Row: 
-            ['أحمد', 'محمد', 'مهندس', 'Full Time', 'بكالوريوس', 'المقر الرئيسي', '5000', 'القاهرة', '01000000000', '23700000000', '', 'ahmed@example.com', '2024-01-01', '2024-01-01', '2025-01-01', '1990-01-01', '2024-01-15']
+            // Example Row:
+            ['أحمد محمد', 'مهندس', 'Full Time', 'بكالوريوس', 'المقر الرئيسي', '5000', 'القاهرة', '01000000000', '23700000000', '', 'ahmed@example.com', '2024-01-01', '2024-01-01', '2025-01-01', '1990-01-01', '2024-01-15']
         ]);
 
         // Auto-width columns
@@ -141,14 +140,10 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess, department
                 }
             });
 
-            // Basic Validation (Only Names are strict)
-            if (!newRow.firstName || String(newRow.firstName).trim() === '') {
+            // Basic Validation (Only Name is strict)
+            if (!newRow.fullName || String(newRow.fullName).trim() === '') {
                 hasError = true;
-                rowErrorMsg += "الاسم الأول مطلوب. ";
-            }
-            if (!newRow.lastName || String(newRow.lastName).trim() === '') {
-                hasError = true;
-                rowErrorMsg += "اسم العائلة مطلوب. ";
+                rowErrorMsg += "الاسم الكامل مطلوب. ";
             }
 
             // Sanitize: Convert empty strings to null (Fixes unique constraint issues for optional fields like email)
@@ -309,7 +304,7 @@ export default function BulkImportModal({ isOpen, onClose, onSuccess, department
                                         {parsedData.slice(0, 5).map((row, i) => (
                                             <tr key={i} style={{ borderTop: '1px solid #f1f5f9', background: row._error ? '#fff1f2' : 'white' }}>
                                                 <td style={{ padding: '0.75rem', color: '#94a3b8' }}>{row._rowNum}</td>
-                                                <td style={{ padding: '0.75rem' }}>{row.firstName} {row.lastName}</td>
+                                                <td style={{ padding: '0.75rem' }}>{row.fullName}</td>
                                                 <td style={{ padding: '0.75rem' }}>{row.position || '-'}</td>
                                                 <td style={{ padding: '0.75rem' }}>{row.department || '-'}</td>
                                                 <td style={{ padding: '0.75rem' }}>

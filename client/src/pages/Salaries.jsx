@@ -280,7 +280,7 @@ export default function Salaries() {
     const filteredRecords = records.filter(r => {
         const emp = r.Employee;
         if (!emp) return false;
-        const name = `${emp.firstName || ''} ${emp.lastName || ''}`.toLowerCase();
+        const name = (emp.fullName || '').toLowerCase();
         return name.includes(searchTerm.toLowerCase()) ||
             emp.position?.toLowerCase().includes(searchTerm.toLowerCase());
     });
@@ -396,7 +396,7 @@ export default function Salaries() {
                                     <tr key={record.employeeId}>
                                         <td>
                                             <div style={{ fontWeight: '600', color: '#1e293b' }}>
-                                                {record.Employee?.firstName} {record.Employee?.lastName}
+                                                {record.Employee?.fullName}
                                             </div>
                                             <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
                                                 {record.Employee?.department || 'بدون قسم'}
@@ -537,7 +537,7 @@ export default function Salaries() {
                         {(printingRecords || records).map((record, idx) => (
                             <tr key={record.employeeId} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
                                 <td style={{ padding: '4mm', fontSize: '12px', color: '#94a3b8', borderBottom: '1px solid #f1f5f9', textAlign: 'center', fontWeight: '600' }}>{(records.indexOf(record) + 1)}</td>
-                                <td style={{ padding: '4mm', fontSize: '12px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{record.Employee?.firstName} {record.Employee?.lastName}</td>
+                                <td style={{ padding: '4mm', fontSize: '12px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{record.Employee?.fullName}</td>
                                 <td style={{ padding: '4mm', fontSize: '12px', color: '#64748b', borderBottom: '1px solid #f1f5f9' }}>{record.Employee?.position}</td>
                                 <td style={{ padding: '4mm', fontSize: '12px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>{record.attendedDays}</td>
                                 <td style={{ padding: '4mm', fontSize: '12px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>{record.baseSalary?.toLocaleString()}</td>
@@ -679,7 +679,7 @@ export default function Salaries() {
                                 {annualPrintingContext.records.map((r, idx) => (
                                     <tr key={r.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
                                         <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', fontWeight: '600' }}>{(annualPrintingContext.totalRecords.indexOf(r) + 1)}</td>
-                                        <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{r.Employee?.firstName} {r.Employee?.lastName}</td>
+                                        <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', fontWeight: '600' }}>{r.Employee?.fullName}</td>
                                         <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9' }}>{r.Employee?.position}</td>
                                         <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>{r.attendedDays}</td>
                                         <td style={{ padding: '4mm', fontSize: '12px', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>{r.baseSalary?.toLocaleString()}</td>

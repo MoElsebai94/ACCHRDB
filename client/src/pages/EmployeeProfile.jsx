@@ -132,7 +132,7 @@ export default function EmployeeProfile() {
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`${employee.firstName}_${employee.lastName}_Profile.pdf`);
+            pdf.save(`${(employee.fullName || '').replace(/\s+/g, '_')}_Profile.pdf`);
         } catch (err) {
             console.error('Error generating PDF:', err);
             alert('حدث خطأ أثناء إنشاء ملف PDF');
@@ -324,16 +324,16 @@ export default function EmployeeProfile() {
                         {employee.photoUrl ? (
                             <img
                                 src={`${API_URL.replace('/api', '')}${employee.photoUrl}`}
-                                alt={`${employee.firstName} ${employee.lastName}`}
+                                alt={employee.fullName}
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
                         ) : (
-                            <>{employee.firstName[0]}{employee.lastName[0]}</>
+                            <>{(employee.fullName || '').split(' ').slice(0, 2).map(n => n[0] || '').join('')}</>
                         )}
                     </div>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{employee.firstName} {employee.lastName}</h2>
+                            <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{employee.fullName}</h2>
                             {!employee.isActive && (
                                 <span style={{
                                     background: '#fee2e2',
@@ -914,13 +914,13 @@ export default function EmployeeProfile() {
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
                         ) : (
-                            <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#64748b' }}>{employee.firstName[0]}{employee.lastName[0]}</span>
+                            <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#64748b' }}>{(employee.fullName || '').split(' ').slice(0, 2).map(n => n[0] || '').join('')}</span>
                         )}
                     </div>
 
                     {/* Basic Data Grid */}
                     <div style={{ flex: 1 }}>
-                        <h3 style={{ fontSize: '20px', margin: '0 0 10px 0', color: '#1e293b' }}>{employee.firstName} {employee.lastName}</h3>
+                        <h3 style={{ fontSize: '20px', margin: '0 0 10px 0', color: '#1e293b' }}>{employee.fullName}</h3>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 20px', fontSize: '12px' }}>
                             <div><strong>المسمى الوظيفي:</strong> {employee.position} {employee.currentJobTitleDate && <span style={{ color: '#64748b' }}>({employee.currentJobTitleDate})</span>}</div>
                             {employee.jobRole && <div><strong>الوظيفة:</strong> {employee.jobRole}</div>}

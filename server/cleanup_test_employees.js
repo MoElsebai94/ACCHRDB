@@ -9,7 +9,7 @@ async function cleanup() {
 
         const result = await Employee.destroy({
             where: {
-                firstName: {
+                fullName: {
                     [Op.like]: 'TEST_USER_%'
                 }
             }

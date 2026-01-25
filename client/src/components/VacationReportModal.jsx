@@ -308,7 +308,7 @@ export default function VacationReportModal({ isOpen, onClose, employees, depart
                                         <tbody>
                                             {printPage.departures.map((emp, index) => (
                                                 <tr key={index} style={{ background: index % 2 === 0 ? 'white' : '#fffaf0' }}>
-                                                    <td style={{ padding: '3mm', border: '1px solid #fed7aa' }}>{emp.firstName} {emp.lastName}</td>
+                                                    <td style={{ padding: '3mm', border: '1px solid #fed7aa' }}>{emp.fullName}</td>
                                                     <td style={{ padding: '3mm', border: '1px solid #fed7aa' }}>{emp.position}</td>
                                                     <td style={{ padding: '3mm', border: '1px solid #fed7aa' }}>
                                                         {getFullDeptName(emp.department)}
@@ -356,7 +356,7 @@ export default function VacationReportModal({ isOpen, onClose, employees, depart
                                         <tbody>
                                             {printPage.returns.map((emp, index) => (
                                                 <tr key={index} style={{ background: index % 2 === 0 ? 'white' : '#f0fdf4' }}>
-                                                    <td style={{ padding: '3mm', border: '1px solid #bbf7d0' }}>{emp.firstName} {emp.lastName}</td>
+                                                    <td style={{ padding: '3mm', border: '1px solid #bbf7d0' }}>{emp.fullName}</td>
                                                     <td style={{ padding: '3mm', border: '1px solid #bbf7d0' }}>{emp.position}</td>
                                                     <td style={{ padding: '3mm', border: '1px solid #bbf7d0' }}>
                                                         {getFullDeptName(emp.department)}

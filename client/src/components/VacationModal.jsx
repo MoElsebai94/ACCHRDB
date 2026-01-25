@@ -74,7 +74,7 @@ export default function VacationModal({ isOpen, onClose, onConfirm, onDelete, em
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`Vacation_Letter_${employee?.firstName}_${employee?.lastName}.pdf`);
+            pdf.save(`Vacation_Letter_${(employee?.fullName || '').replace(/\s+/g, '_')}.pdf`);
         } catch (err) {
             console.error('Error generating PDF:', err);
             alert('حدث خطأ أثناء إنشاء ملف PDF');
@@ -464,7 +464,7 @@ export default function VacationModal({ isOpen, onClose, onConfirm, onDelete, em
                     {/* Body */}
                     <div style={{ marginBottom: '8mm', fontSize: '16px', lineHeight: '1.8' }}>
                         <p style={{ margin: '0 0 10px 0' }}>
-                            قادم لسيادتكم السيد/ <strong>{employee?.firstName} {employee?.lastName}</strong> - بمهنة / {employee?.jobRole || employee?.position} - رقم ثابت/ {employee?.fixedNumber || '.....'}
+                            قادم لسيادتكم السيد/ <strong>{employee?.fullName}</strong> - بمهنة / {employee?.jobRole || employee?.position} - رقم ثابت/ {employee?.fixedNumber || '.....'}
                         </p>
                         <p style={{ margin: 0 }}>
                             وذلك في أجازة لمدة ( <strong>{total || '...'}</strong> ) يوم وذلك حسب البيان التالي :-

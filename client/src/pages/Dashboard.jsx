@@ -159,7 +159,7 @@ export default function Dashboard() {
                                             textDecoration: 'none'
                                         }}
                                     >
-                                        <span style={{ fontWeight: '500' }}>{emp.firstName} {emp.lastName}</span>
+                                        <span style={{ fontWeight: '500' }}>{emp.fullName}</span>
                                         <span>
                                             {isExpired ? 'انتهى العقد في: ' : 'ينتهي في: '}
                                             {emp.contractEndDate}
@@ -207,7 +207,7 @@ export default function Dashboard() {
                                         textDecoration: 'none'
                                     }}
                                 >
-                                    <span style={{ fontWeight: '500' }}>{emp.firstName} {emp.lastName}</span>
+                                    <span style={{ fontWeight: '500' }}>{emp.fullName}</span>
                                     <span>
                                         {isOverdue
                                             ? `تجاوز المدة بـ ${daysOverdue} يوم`
@@ -248,7 +248,7 @@ export default function Dashboard() {
                                         textDecoration: 'none'
                                     }}
                                 >
-                                    <span style={{ fontWeight: '500' }}>{emp.firstName} {emp.lastName}</span>
+                                    <span style={{ fontWeight: '500' }}>{emp.fullName}</span>
                                     <span>يعود في: {emp.vacationReturnDate}</span>
                                 </Link>
                             ))}

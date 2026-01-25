@@ -10,8 +10,7 @@ export default function EmployeeForm() {
     const isEditMode = !!id;
 
     const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
+        fullName: '',
         email: '',
         position: '',
         department: '',
@@ -242,7 +241,7 @@ export default function EmployeeForm() {
 
         // Basic validation - check all fields except email and vacationReturnDate
         // If inactive, salary is not required/can be zero/empty string
-        const requiredFields = ['firstName', 'lastName', 'position', 'department', 'dateHired', 'fixedNumber', 'jobRole', 'contractStartDate', 'arrivalDate'];
+        const requiredFields = ['fullName', 'position', 'department', 'dateHired', 'fixedNumber', 'jobRole', 'contractStartDate', 'arrivalDate'];
         if (formData.isActive) {
             requiredFields.push('salary');
         }
@@ -459,27 +458,15 @@ export default function EmployeeForm() {
                 </div>
 
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div className="input-group">
-                        <label className="input-label">الاسم الأول</label>
-                        <input
-                            className="input-field"
-                            name="firstName"
-                            value={formData.firstName}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-                    <div className="input-group">
-                        <label className="input-label">اسم العائلة</label>
-                        <input
-                            className="input-field"
-                            name="lastName"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
+                <div className="input-group">
+                    <label className="input-label">الاسم الكامل</label>
+                    <input
+                        className="input-field"
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleChange}
+                        required
+                    />
                 </div>
 
                 <div className="input-group">

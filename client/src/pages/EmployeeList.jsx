@@ -144,7 +144,7 @@ export default function EmployeeList() {
 
     const filteredEmployees = useMemo(() => {
         return employees.filter(emp => {
-            const matchesSearch = (emp.firstName + ' ' + emp.lastName).toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesSearch = (emp.fullName || '').toLowerCase().includes(searchTerm.toLowerCase());
 
             // Smart Dept Filter: Match selected OR any sub-department
             let matchesDept = true;
@@ -215,7 +215,7 @@ export default function EmployeeList() {
             if (orderA !== orderB) return orderA - orderB;
 
             // Secondary: Name
-            return (a.firstName + a.lastName).localeCompare(b.firstName + b.lastName);
+            return (a.fullName || '').localeCompare(b.fullName || '');
         });
     }, [filteredEmployees, deptOptions]);
 
@@ -742,12 +742,12 @@ export default function EmployeeList() {
                                                                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                                     />
                                                                 ) : (
-                                                                    <>{emp.firstName[0]}{emp.lastName[0]}</>
+                                                                    <>{(emp.fullName || '').split(' ').slice(0, 2).map(n => n[0] || '').join('')}</>
                                                                 )}
                                                             </div>
                                                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                                    {emp.firstName} {emp.lastName}
+                                                                    {emp.fullName}
                                                                     {isOnVacation && (
                                                                         <span style={{
                                                                             background: '#dbeafe',
@@ -925,7 +925,7 @@ export default function EmployeeList() {
                                     if (col.key === 'name') {
                                         return (
                                             <td key={col.key} style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'right', fontWeight: 'bold' }}>
-                                                <span style={{ display: 'block', color: '#111827', fontSize: '14px' }}>{emp.firstName} {emp.lastName}</span>
+                                                <span style={{ display: 'block', color: '#111827', fontSize: '14px' }}>{emp.fullName}</span>
                                             </td>
                                         );
                                     }

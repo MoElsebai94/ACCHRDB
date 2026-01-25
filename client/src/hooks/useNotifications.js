@@ -28,8 +28,8 @@ export default function useNotifications() {
                             severity: isExpired ? 'high' : 'medium',
                             title: 'تنبيه عقد',
                             message: isExpired
-                                ? `انتهى عقد ${emp.firstName} ${emp.lastName}`
-                                : `ينتهي عقد ${emp.firstName} ${emp.lastName} قريباً`,
+                                ? `انتهى عقد ${emp.fullName}`
+                                : `ينتهي عقد ${emp.fullName} قريباً`,
                             date: emp.contractEndDate,
                             link: `/employees/${emp.id}`
                         });
@@ -51,7 +51,7 @@ export default function useNotifications() {
                             type: 'residence',
                             severity: isOverdue ? 'high' : 'medium',
                             title: 'تنبيه إقامة',
-                            message: `تجاوز ${emp.firstName} ${emp.lastName} مدة 4 أشهر`,
+                            message: `تجاوز ${emp.fullName} مدة 4 أشهر`,
                             date: emp.fourMonthsDate,
                             link: `/employees/${emp.id}`
                         });
@@ -69,7 +69,7 @@ export default function useNotifications() {
                             type: 'vacation',
                             severity: 'info',
                             title: 'عودة من أجازة',
-                            message: `يعود ${emp.firstName} ${emp.lastName} من الأجازة قريباً`,
+                            message: `يعود ${emp.fullName} من الأجازة قريباً`,
                             date: emp.vacationReturnDate,
                             link: `/employees/${emp.id}`
                         });

@@ -21,8 +21,7 @@ async function seed() {
             const randomPos = POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
 
             employees.push({
-                firstName: `TEST_USER_${i}`,
-                lastName: `TestLastName_${i}`,
+                fullName: `TEST_USER_${i} TestLastName_${i}`,
                 fixedNumber: `9000${i}`,
                 email: `testuser${i}@example.com`,
                 position: randomPos,

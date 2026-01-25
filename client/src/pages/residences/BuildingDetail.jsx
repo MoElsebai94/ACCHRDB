@@ -253,7 +253,7 @@ export default function BuildingDetail() {
                                                     <>
                                                         <div className="resident-details">
                                                             <User size={14} />
-                                                            <span className="name">{perm.firstName} {perm.lastName}</span>
+                                                            <span className="name">{perm.fullName}</span>
                                                             {onVacation && (
                                                                 <div className="vacation-badge">
                                                                     <Calendar size={12} />
@@ -290,7 +290,7 @@ export default function BuildingDetail() {
                                                         <>
                                                             <div className="resident-details">
                                                                 <User size={14} />
-                                                                <span className="name">{temp.firstName} {temp.lastName} (مؤقت)</span>
+                                                                <span className="name">{temp.fullName} (مؤقت)</span>
                                                             </div>
                                                             <button className="btn-icon btn-sm" onClick={() => setConfirmUnassign({ isOpen: true, roomId: room.id, mode: 'temporary' })}>
                                                                 <UserMinus size={14} />
@@ -381,7 +381,7 @@ export default function BuildingDetail() {
                                             .filter(emp => !emp.permanentRoom && !emp.temporaryRoom && emp.isActive)
                                             .map(emp => ({
                                                 value: emp.id,
-                                                label: `${emp.firstName} ${emp.lastName} (${emp.position})`
+                                                label: `${emp.fullName} (${emp.position})`
                                             }))
                                     ]}
                                     value={selectedEmployeeId}

@@ -222,7 +222,7 @@ app.get('/api/vacations', async (req, res) => {
 
         const vacations = await Vacation.findAll({
             where,
-            include: [{ model: Employee, attributes: ['firstName', 'lastName'] }],
+            include: [{ model: Employee, attributes: ['fullName'] }],
             order: [['startDate', 'DESC']]
         });
         res.json(vacations);
@@ -372,7 +372,7 @@ app.get('/api/salaries', async (req, res) => {
             where: { month },
             include: [{
                 model: Employee,
-                attributes: ['id', 'firstName', 'lastName', 'position', 'salary', 'isActive', 'department']
+                attributes: ['id', 'fullName', 'position', 'salary', 'isActive', 'department']
             }]
         });
         res.json(salaries);
@@ -396,7 +396,7 @@ app.get('/api/salaries/init', async (req, res) => {
             where: { month },
             include: [{
                 model: Employee,
-                attributes: ['id', 'firstName', 'lastName', 'position', 'salary', 'isActive', 'department']
+                attributes: ['id', 'fullName', 'position', 'salary', 'isActive', 'department']
             }]
         });
         const existingEmpIds = new Set(existing.map(s => s.employeeId));
@@ -435,7 +435,7 @@ app.get('/api/salaries/year', async (req, res) => {
             },
             include: [{
                 model: Employee,
-                attributes: ['id', 'firstName', 'lastName', 'position', 'salary', 'isActive', 'department']
+                attributes: ['id', 'fullName', 'position', 'salary', 'isActive', 'department']
             }],
             order: [['month', 'ASC']]
         });
@@ -749,7 +749,7 @@ app.get('/api/settings/export-employees', async (req, res) => {
         const employees = await Employee.findAll();
 
         const headers = [
-            'ID', 'الاسم الأول', 'اسم العائلة', 'الرقم الثابت', 'البريد الإلكتروني',
+            'ID', 'الاسم الكامل', 'الرقم الثابت', 'البريد الإلكتروني',
             'الوظيفة', 'القسم', 'مركز التكلفة', 'دور العمل', 'الراتب',
             'تاريخ التعيين', 'بداية العقد', 'نهاية العقد',
             'تاريخ الوصول', 'تاريخ العودة من الأجازة',
@@ -763,8 +763,7 @@ app.get('/api/settings/export-employees', async (req, res) => {
 
         const rows = employees.map(emp => [
             emp.id,
-            emp.firstName,
-            emp.lastName,
+            emp.fullName,
             emp.fixedNumber,
             emp.email || '',
             emp.position,
