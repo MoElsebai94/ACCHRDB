@@ -14,7 +14,6 @@ const Employee = sequelize.define('Employee', {
   email: {
     type: DataTypes.STRING,
     allowNull: true,
-    unique: true,
     validate: {
       isEmail: {
         msg: "البريد الإلكتروني غير صحيح"
@@ -34,6 +33,10 @@ const Employee = sequelize.define('Employee', {
     allowNull: true
   },
   salary: {
+    type: DataTypes.FLOAT,
+    allowNull: true
+  },
+  allowances: {
     type: DataTypes.FLOAT,
     allowNull: true
   },
@@ -148,6 +151,14 @@ const Employee = sequelize.define('Employee', {
   birthDate: {
     type: DataTypes.DATEONLY,
     allowNull: true
+  },
+  buildingId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Buildings',
+      key: 'id'
+    }
   }
 });
 

@@ -111,32 +111,63 @@ export default function Settings() {
                         onChange={async (e) => {
                             if (!e.target.files[0]) return;
                             const file = e.target.files[0];
-                            if (!window.confirm(`هل أنت متأكد من استعادة البيانات من الملف:\n${file.name}\n\nسيتم حذف البيانات الحالية!`)) {
-                                e.target.value = '';
-                                return;
-                            }
 
-                            setIsBackingUp(true); // Reuse loading state
-                            const formData = new FormData();
-                            formData.append('database', file);
+                            setIsBackingUp(true);
+                            setStatus({ type: '', message: '' });
+
+                            // First, validate the backup file
+                            const validateFormData = new FormData();
+                            validateFormData.append('database', file);
 
                             try {
+                                const validateRes = await fetch(`${API_URL}/settings/validate-backup`, {
+                                    method: 'POST',
+                                    body: validateFormData
+                                });
+                                const validateData = await validateRes.json();
+
+                                if (!validateRes.ok || !validateData.valid) {
+                                    setStatus({ type: 'error', message: validateData.error || 'ملف غير صالح' });
+                                    setIsBackingUp(false);
+                                    e.target.value = '';
+                                    return;
+                                }
+
+                                // Show confirmation with file info
+                                const confirmMessage = `تأكيد الاستعادة\n\n` +
+                                    `الملف: ${file.name}\n` +
+                                    `الحجم: ${validateData.size} MB\n` +
+                                    `عدد الموظفين: ${validateData.employeeCount}\n\n` +
+                                    `⚠️ تنبيه: سيتم إنشاء نسخة احتياطية تلقائية من البيانات الحالية قبل الاستعادة.\n\n` +
+                                    `هل تريد المتابعة؟`;
+
+                                if (!window.confirm(confirmMessage)) {
+                                    setIsBackingUp(false);
+                                    e.target.value = '';
+                                    return;
+                                }
+
+                                // Proceed with restore
+                                const restoreFormData = new FormData();
+                                restoreFormData.append('database', file);
+
                                 const res = await fetch(`${API_URL}/settings/restore`, {
                                     method: 'POST',
-                                    body: formData
+                                    body: restoreFormData
                                 });
                                 const data = await res.json();
+
                                 if (res.ok) {
-                                    alert(data.message);
-                                    window.location.reload(); // Reload app to refresh connection
+                                    alert(data.message + '\n\nتم حفظ نسخة احتياطية من بياناتك السابقة تلقائياً.');
+                                    window.location.reload();
                                 } else {
                                     setStatus({ type: 'error', message: data.error || 'فشل الاستعادة' });
                                 }
                             } catch (error) {
-                                setStatus({ type: 'error', message: 'خطأ في الاتصال' });
+                                setStatus({ type: 'error', message: 'خطأ في الاتصال: ' + error.message });
                             } finally {
                                 setIsBackingUp(false);
-                                e.target.value = ''; // Reset input
+                                e.target.value = '';
                             }
                         }}
                     />

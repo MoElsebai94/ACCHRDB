@@ -119,6 +119,10 @@ Room.belongsTo(Employee, { as: 'temporaryResident', foreignKey: 'temporaryReside
 Employee.hasOne(Room, { as: 'permanentRoom', foreignKey: 'permanentResidentId' });
 Employee.hasOne(Room, { as: 'temporaryRoom', foreignKey: 'temporaryResidentId' });
 
+// Employee-Building association (for showing unassigned employees in building view)
+Employee.belongsTo(Building, { as: 'building', foreignKey: 'buildingId' });
+Building.hasMany(Employee, { as: 'employees', foreignKey: 'buildingId' });
+
 Employee.hasMany(LoanHistory, { as: 'loanHistory', foreignKey: 'employeeId', onDelete: 'CASCADE' });
 LoanHistory.belongsTo(Employee, { foreignKey: 'employeeId' });
 
@@ -652,16 +656,53 @@ app.get('/api/settings/backup', async (req, res) => {
 
         // FORCE CHECKPOINT to ensure WAL is merged into main DB file
         try {
-            await sequelize.query('PRAGMA wal_checkpoint(FULL);');
+            await sequelize.query('PRAGMA wal_checkpoint(TRUNCATE);');
             console.log('WAL Checkpoint complete before backup.');
         } catch (dbErr) {
             console.error('Checkpoint failed (proceeding with file copy):', dbErr);
         }
 
+        // Create a safe copy for download to avoid file locking issues
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `backup-gomaadb-${timestamp}.sqlite`;
+        const tempBackupPath = path.join(DATA_DIR, 'backups', filename);
 
-        res.download(DB_PATH, filename);
+        // Ensure backups directory exists
+        const backupsDir = path.join(DATA_DIR, 'backups');
+        if (!fs.existsSync(backupsDir)) {
+            fs.mkdirSync(backupsDir, { recursive: true });
+        }
+
+        // Copy to temp location first
+        fs.copyFileSync(DB_PATH, tempBackupPath);
+
+        // Verify the backup file is valid SQLite
+        const fd = fs.openSync(tempBackupPath, 'r');
+        const buffer = Buffer.alloc(16);
+        fs.readSync(fd, buffer, 0, 16, 0);
+        fs.closeSync(fd);
+
+        if (!buffer.toString('utf-8').startsWith('SQLite format 3')) {
+            fs.unlinkSync(tempBackupPath);
+            return res.status(500).json({ error: 'Backup verification failed - invalid SQLite file' });
+        }
+
+        console.log(`Backup created successfully: ${filename}, size: ${fs.statSync(tempBackupPath).size} bytes`);
+
+        // Send the file and delete temp after download
+        res.download(tempBackupPath, filename, (err) => {
+            // Clean up temp file after download (success or fail)
+            try {
+                if (fs.existsSync(tempBackupPath)) {
+                    fs.unlinkSync(tempBackupPath);
+                }
+            } catch (e) {
+                console.error('Failed to clean up temp backup:', e);
+            }
+            if (err) {
+                console.error('Download error:', err);
+            }
+        });
     } catch (error) {
         console.error('Backup error:', error);
         res.status(500).json({ error: error.message });
@@ -670,13 +711,21 @@ app.get('/api/settings/backup', async (req, res) => {
 
 // Database Restore
 app.post('/api/settings/restore', uploadRestore.single('database'), async (req, res) => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const safetyBackupPath = path.join(DATA_DIR, 'backups', `pre-restore-backup-${timestamp}.sqlite`);
+    let safetyBackupCreated = false;
+
     try {
         if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
         const tempPath = req.file.path;
-        // Use defined DB_PATH
         const dbPath = DB_PATH;
-        const backupPath = DB_PATH + '.bak';
+
+        // Ensure backups directory exists
+        const backupsDir = path.join(DATA_DIR, 'backups');
+        if (!fs.existsSync(backupsDir)) {
+            fs.mkdirSync(backupsDir, { recursive: true });
+        }
 
         // 1. Validate File Size
         const stats = fs.statSync(tempPath);
@@ -697,7 +746,34 @@ app.post('/api/settings/restore', uploadRestore.single('database'), async (req, 
             return res.status(400).json({ error: 'الملف المرفق ليس قاعدة بيانات صالحة (Invalid SQLite file)' });
         }
 
-        // Close connection to release file lock
+        // 3. Validate that the uploaded DB has the Employees table (basic schema check)
+        const sqlite3 = require('sqlite3').verbose();
+        const testDb = new sqlite3.Database(tempPath, sqlite3.OPEN_READONLY);
+
+        const hasEmployeesTable = await new Promise((resolve, reject) => {
+            testDb.get("SELECT name FROM sqlite_master WHERE type='table' AND name='Employees'", (err, row) => {
+                testDb.close();
+                if (err) reject(err);
+                else resolve(!!row);
+            });
+        });
+
+        if (!hasEmployeesTable) {
+            fs.unlinkSync(tempPath);
+            return res.status(400).json({
+                error: 'الملف لا يحتوي على جدول الموظفين. تأكد من أنه ملف نسخة احتياطية صحيح من هذا التطبيق.'
+            });
+        }
+
+        // 4. Checkpoint current database before closing
+        try {
+            await sequelize.query('PRAGMA wal_checkpoint(TRUNCATE);');
+            console.log('WAL Checkpoint complete before restore.');
+        } catch (dbErr) {
+            console.error('Checkpoint failed:', dbErr);
+        }
+
+        // 5. Close connection to release file lock
         try {
             await sequelize.close();
             console.log('Database connection closed for restore.');
@@ -705,28 +781,59 @@ app.post('/api/settings/restore', uploadRestore.single('database'), async (req, 
             console.warn('Could not close DB connection (might be already closed):', e);
         }
 
-        // Wait brief moment for locks to release
+        // Wait for locks to release
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // 3. Safety Backup of CURRENT Data
+        // 6. Create Safety Backup of CURRENT Data (CRITICAL - before any changes)
         if (fs.existsSync(dbPath)) {
             try {
-                fs.copyFileSync(dbPath, backupPath);
-                console.log('Created safety backup at:', backupPath);
+                fs.copyFileSync(dbPath, safetyBackupPath);
+                safetyBackupCreated = true;
+                console.log('Created safety backup at:', safetyBackupPath);
             } catch (err) {
-                console.error('Failed to create safety backup:', err);
-                // Decide if we should proceed? Yes, but warn log.
+                console.error('CRITICAL: Failed to create safety backup:', err);
+                fs.unlinkSync(tempPath);
+                return res.status(500).json({
+                    error: 'فشل في إنشاء نسخة احتياطية من البيانات الحالية. تم إلغاء الاستعادة للحفاظ على بياناتك.'
+                });
             }
         }
 
-        // 4. Overwrite Database
-        fs.copyFileSync(tempPath, dbPath);
-        fs.unlinkSync(tempPath); // Clean up temp
+        // 7. Perform the restore (copy uploaded file to DB path)
+        try {
+            fs.copyFileSync(tempPath, dbPath);
+            fs.unlinkSync(tempPath); // Clean up temp upload
+
+            // Also remove any WAL/SHM files from previous database
+            const walPath = dbPath + '-wal';
+            const shmPath = dbPath + '-shm';
+            if (fs.existsSync(walPath)) fs.unlinkSync(walPath);
+            if (fs.existsSync(shmPath)) fs.unlinkSync(shmPath);
+
+            console.log('Database restored successfully from backup.');
+        } catch (copyErr) {
+            console.error('CRITICAL: Failed to copy database:', copyErr);
+
+            // Try to rollback using the safety backup
+            if (safetyBackupCreated && fs.existsSync(safetyBackupPath)) {
+                try {
+                    fs.copyFileSync(safetyBackupPath, dbPath);
+                    console.log('Rolled back to safety backup after failed restore.');
+                } catch (rollbackErr) {
+                    console.error('CRITICAL: Rollback also failed:', rollbackErr);
+                }
+            }
+
+            return res.status(500).json({
+                error: 'فشل في استعادة قاعدة البيانات. تم استعادة البيانات السابقة.'
+            });
+        }
 
         console.log('Database restored from backup. Restarting server...');
 
         res.json({
             message: 'تم استعادة قاعدة البيانات بنجاح. سيتم إعادة تشغيل الخادم...',
+            safetyBackup: safetyBackupPath,
             restartRequired: true
         });
 
@@ -738,7 +845,7 @@ app.post('/api/settings/restore', uploadRestore.single('database'), async (req, 
     } catch (error) {
         console.error('Restore error:', error);
         // Try to clean up temp if exists
-        try { if (req.file) fs.unlinkSync(req.file.path); } catch (e) { }
+        try { if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path); } catch (e) { }
         res.status(500).json({ error: 'Restore failed: ' + error.message });
     }
 });
@@ -750,40 +857,55 @@ app.get('/api/settings/export-employees', async (req, res) => {
 
         const headers = [
             'ID', 'الاسم الكامل', 'الرقم الثابت', 'البريد الإلكتروني',
-            'الوظيفة', 'القسم', 'مركز التكلفة', 'دور العمل', 'الراتب',
-            'تاريخ التعيين', 'بداية العقد', 'نهاية العقد',
-            'تاريخ الوصول', 'تاريخ العودة من الأجازة',
+            'المسمى الوظيفي', 'تاريخ المسمى الوظيفي', 'القسم', 'مركز التكلفة', 'الوظيفة', 'الراتب', 'البدلات',
+            'تاريخ التعيين', 'تاريخ الميلاد', 'بداية العقد', 'نهاية العقد',
+            'تاريخ الوصول', 'تاريخ بداية الأجازة', 'تاريخ العودة من الأجازة',
+            'شركة الطيران', 'تاريخ السفر', 'تاريخ الوصول قبل الأجازة',
             'المؤهل', 'تاريخ المؤهل',
             'الحالة الاجتماعية',
-            'الدرجة', 'تاريخ الدرجة',
-            'تاريخ المسمى الوظيفي الحالي',
-            'بداية السلفة', 'نهاية السلفة',
+            'الدرجة الوظيفية', 'تاريخ الدرجة',
+            'بداية الإعارة', 'نهاية الإعارة',
+            'الإدارة قبل الإعارة', 'جهة العمل الحالية',
+            'تليفون القاهرة', 'تليفون الكاميرون',
+            'العنوان', 'تقرير الكفاءة',
             'الحالة (نشط)'
         ];
 
         const rows = employees.map(emp => [
             emp.id,
             emp.fullName,
-            emp.fixedNumber,
+            emp.fixedNumber || '',
             emp.email || '',
-            emp.position,
-            emp.department,
+            emp.position || '',
+            emp.currentJobTitleDate || '',
+            emp.department || '',
             emp.costCenter || '',
-            emp.jobRole,
-            emp.salary,
-            emp.dateHired,
-            emp.contractStartDate,
-            emp.contractEndDate,
-            emp.arrivalDate,
+            emp.jobRole || '',
+            emp.salary || '',
+            emp.allowances || '',
+            emp.dateHired || '',
+            emp.birthDate || '',
+            emp.contractStartDate || '',
+            emp.contractEndDate || '',
+            emp.arrivalDate || '',
+            emp.vacationStartDate || '',
             emp.vacationReturnDate || '',
+            emp.airline || '',
+            emp.travelDate || '',
+            emp.arrivalDateBeforeVacation || '',
             emp.qualification || '',
             emp.qualificationDate || '',
             emp.maritalStatus || '',
             emp.grade || '',
             emp.gradeDate || '',
-            emp.currentJobTitleDate || '',
             emp.loanStartDate || '',
             emp.loanEndDate || '',
+            emp.departmentBeforeLoan || '',
+            emp.currentWorkLocation || '',
+            emp.cairoPhone || '',
+            emp.cameroonPhone || '',
+            emp.address || '',
+            emp.efficiencyReport || '',
             emp.isActive ? 'نشط' : 'غير نشط'
         ]);
 
@@ -820,6 +942,70 @@ app.get('/api/settings/db-info', async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Validate backup file before restore (preview)
+app.post('/api/settings/validate-backup', uploadRestore.single('database'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+        const tempPath = req.file.path;
+        const stats = fs.statSync(tempPath);
+
+        // Validate file size
+        if (stats.size === 0) {
+            fs.unlinkSync(tempPath);
+            return res.status(400).json({ valid: false, error: 'ملف النسخة الاحتياطية فارغ' });
+        }
+
+        // Validate SQLite header
+        const fd = fs.openSync(tempPath, 'r');
+        const buffer = Buffer.alloc(16);
+        fs.readSync(fd, buffer, 0, 16, 0);
+        fs.closeSync(fd);
+
+        if (!buffer.toString('utf-8').startsWith('SQLite format 3')) {
+            fs.unlinkSync(tempPath);
+            return res.status(400).json({ valid: false, error: 'الملف ليس قاعدة بيانات SQLite صالحة' });
+        }
+
+        // Open and check contents
+        const sqlite3 = require('sqlite3').verbose();
+        const testDb = new sqlite3.Database(tempPath, sqlite3.OPEN_READONLY);
+
+        const info = await new Promise((resolve, reject) => {
+            testDb.get("SELECT COUNT(*) as count FROM Employees", (err, row) => {
+                if (err) {
+                    testDb.close();
+                    reject(err);
+                } else {
+                    resolve({ employeeCount: row.count });
+                }
+            });
+        });
+
+        testDb.close();
+        fs.unlinkSync(tempPath); // Clean up
+
+        res.json({
+            valid: true,
+            size: (stats.size / 1024 / 1024).toFixed(2),
+            employeeCount: info.employeeCount,
+            message: `الملف صالح ويحتوي على ${info.employeeCount} موظف`
+        });
+
+    } catch (error) {
+        // Clean up on error
+        try { if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path); } catch (e) { }
+
+        if (error.message && error.message.includes('no such table')) {
+            return res.status(400).json({
+                valid: false,
+                error: 'الملف لا يحتوي على جدول الموظفين. تأكد من أنه نسخة احتياطية من هذا التطبيق.'
+            });
+        }
+        res.status(500).json({ valid: false, error: error.message });
     }
 });
 
@@ -871,8 +1057,29 @@ app.get('/api/residences/buildings/:id', async (req, res) => {
                 }]
             }]
         });
-        if (building) res.json(building);
-        else res.status(404).json({ error: 'Building not found' });
+        if (!building) {
+            return res.status(404).json({ error: 'Building not found' });
+        }
+
+        // Find employees assigned to this building but not yet assigned to a room
+        const unassignedEmployees = await Employee.findAll({
+            where: {
+                buildingId: req.params.id,
+                isActive: true
+            },
+            include: [
+                { model: Room, as: 'permanentRoom' },
+                { model: Room, as: 'temporaryRoom' }
+            ]
+        });
+
+        // Filter to only those without room assignments
+        const unassignedToRoom = unassignedEmployees.filter(emp => !emp.permanentRoom && !emp.temporaryRoom);
+
+        const result = building.toJSON();
+        result.unassignedEmployees = unassignedToRoom;
+
+        res.json(result);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -1025,7 +1232,7 @@ app.get('/api/employees/:id', async (req, res) => {
 app.post('/api/employees', async (req, res) => {
     try {
         const employeeData = { ...req.body };
-        ['dateHired', 'contractStartDate', 'contractEndDate', 'arrivalDate', 'vacationReturnDate', 'vacationStartDate'].forEach(key => {
+        ['dateHired', 'contractStartDate', 'contractEndDate', 'arrivalDate', 'vacationReturnDate', 'vacationStartDate', 'loanStartDate', 'loanEndDate', 'birthDate', 'qualificationDate', 'gradeDate', 'currentJobTitleDate', 'arrivalDateBeforeVacation', 'travelDate'].forEach(key => {
             if (employeeData[key] === '') employeeData[key] = null;
         });
 
@@ -1053,7 +1260,7 @@ app.put('/api/employees/:id', async (req, res) => {
             const { id, createdAt, updatedAt, ...updateData } = req.body;
 
             // Convert empty strings to null for date fields
-            ['dateHired', 'contractStartDate', 'contractEndDate', 'arrivalDate', 'vacationReturnDate', 'vacationStartDate'].forEach(key => {
+            ['dateHired', 'contractStartDate', 'contractEndDate', 'arrivalDate', 'vacationReturnDate', 'vacationStartDate', 'loanStartDate', 'loanEndDate', 'birthDate', 'qualificationDate', 'gradeDate', 'currentJobTitleDate', 'arrivalDateBeforeVacation', 'travelDate'].forEach(key => {
                 if (updateData[key] === '') updateData[key] = null;
             });
 
@@ -1177,6 +1384,8 @@ const runMigrations = async () => {
         const existingColumns = empResults.map(col => col.name);
 
         const columnsToCheck = [
+            'fullName',
+            'department',
             'departmentBeforeLoan',
             'currentWorkLocation',
             'cairoPhone',
@@ -1195,16 +1404,55 @@ const runMigrations = async () => {
             'currentJobTitleDate',
             'airline',
             'arrivalDateBeforeVacation',
-            'travelDate'
+            'travelDate',
+            'birthDate',
+            'contractStartDate',
+            'contractEndDate',
+            'arrivalDate',
+            'vacationReturnDate',
+            'fixedNumber',
+            'jobRole',
+            'dateHired',
+            'costCenter',
+            'position',
+            'email',
+            'isActive'
+        ];
+
+        // Numeric columns that need REAL type
+        const numericColumnsToCheck = [
+            'allowances',
+            'salary'
+        ];
+
+        // Integer columns (foreign keys)
+        const integerColumnsToCheck = [
+            'buildingId'
         ];
 
         for (const colName of columnsToCheck) {
             if (!existingColumns.includes(colName)) {
                 console.log(`Migrating: Adding missing column '${colName}' to Employees...`);
-                // Use generic VARCHAR/TEXT for flexibility or DATE where appropriate, 
+                // Use generic VARCHAR/TEXT for flexibility or DATE where appropriate,
                 // but for SQLite simple adds, VARCHAR/TEXT is safest for strings/dates.
                 // Using general type VARCHAR(255) covering strings and ISO dates.
                 await sequelize.query(`ALTER TABLE Employees ADD COLUMN ${colName} VARCHAR(255);`);
+                console.log(`Migration successful: '${colName}' added.`);
+            }
+        }
+
+        for (const colName of numericColumnsToCheck) {
+            if (!existingColumns.includes(colName)) {
+                console.log(`Migrating: Adding missing numeric column '${colName}' to Employees...`);
+                await sequelize.query(`ALTER TABLE Employees ADD COLUMN ${colName} REAL;`);
+                console.log(`Migration successful: '${colName}' added.`);
+            }
+        }
+
+        for (const colName of integerColumnsToCheck) {
+            if (!existingColumns.includes(colName)) {
+                console.log(`Migrating: Adding missing integer column '${colName}' to Employees...`);
+                await sequelize.query(`ALTER TABLE Employees ADD COLUMN ${colName} INTEGER;`);
                 console.log(`Migration successful: '${colName}' added.`);
             }
         }

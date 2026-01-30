@@ -423,6 +423,17 @@ export default function EmployeeProfile() {
                                 </div>
                             </div>
                         )}
+                        {employee.birthDate && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>تاريخ الميلاد</div>
+                                    <div style={{ fontWeight: '500' }}>{employee.birthDate}</div>
+                                </div>
+                                <div style={{ padding: '0.75rem', background: '#f1f5f9', borderRadius: '8px' }}>
+                                    <Calendar size={20} color="var(--primary-color)" />
+                                </div>
+                            </div>
+                        )}
                         {employee.address && (
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                                 <div style={{ textAlign: 'right' }}>
@@ -657,10 +668,19 @@ export default function EmployeeProfile() {
                                 </div>
                             </div>
                         )}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                             <div style={{ textAlign: 'right' }}>
                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>الراتب</div>
-                                <div style={{ fontWeight: '500' }}>${Number(employee.salary).toLocaleString()}</div>
+                                <div style={{ fontWeight: '500' }}>${Number(employee.salary || 0).toLocaleString()}</div>
+                            </div>
+                            <div style={{ padding: '0.75rem', background: '#f1f5f9', borderRadius: '8px' }}>
+                                <DollarSign size={20} color="var(--success-color)" />
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>البدلات</div>
+                                <div style={{ fontWeight: '500' }}>${Number(employee.allowances || 0).toLocaleString()}</div>
                             </div>
                             <div style={{ padding: '0.75rem', background: '#f1f5f9', borderRadius: '8px' }}>
                                 <DollarSign size={20} color="var(--success-color)" />
@@ -966,17 +986,25 @@ export default function EmployeeProfile() {
                             { label: 'الإدارة قبل الإعارة', value: employee.departmentBeforeLoan || '-' }
                         ],
                         [
-                            { label: 'الراتب الأساسي', value: `$${Number(employee.salary).toLocaleString()}` },
+                            { label: 'الراتب الأساسي', value: `$${Number(employee.salary || 0).toLocaleString()}` },
+                            { label: 'البدلات', value: `$${Number(employee.allowances || 0).toLocaleString()}` }
+                        ],
+                        [
                             {
                                 label: 'الحالة الاجتماعية', value: (() => {
                                     const statusMap = { 'Single': 'أعزب', 'Married': 'متزوج', 'MarriedWithDependents': 'متزوج و يعول', 'Divorced': 'مطلق', 'Widowed': 'أرمل' };
                                     return statusMap[employee.maritalStatus] || employee.maritalStatus || '-';
                                 })()
-                            }
+                            },
+                            { label: 'تقرير الكفاءة', value: employee.efficiencyReport || '-' }
+                        ],
+                        [
+                            { label: 'تاريخ الميلاد', value: employee.birthDate || '-' },
+                            { label: '', value: '' }
                         ],
                         [
                             { label: 'الاستراحه', value: employee.permanentRoom?.Apartment?.Building?.name || (employee.temporaryRoom?.Apartment?.Building?.name ? `${employee.temporaryRoom.Apartment.Building.name} (مؤقت)` : '-') },
-                            { label: 'تقرير الكفاءة', value: employee.efficiencyReport || '-' }
+                            { label: '', value: '' }
                         ]
                     ].map((row, idx) => (
                         <div key={idx} style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>

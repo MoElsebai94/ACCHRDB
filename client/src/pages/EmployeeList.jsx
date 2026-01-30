@@ -41,13 +41,18 @@ export default function EmployeeList() {
         { key: 'department', label: 'القسم' },
         { key: 'costCenter', label: 'مركز التكلفة' },
         { key: 'salary', label: 'الراتب' },
+        { key: 'allowances', label: 'البدلات' },
         { key: 'email', label: 'البريد الإلكتروني' },
         { key: 'fixedNumber', label: 'الرقم الثابت' },
         { key: 'dateHired', label: 'تاريخ التعيين' },
+        { key: 'birthDate', label: 'تاريخ الميلاد' },
         { key: 'contractStartDate', label: 'تاريخ بداية العقد' },
         { key: 'contractEndDate', label: 'تاريخ نهاية العقد' },
         { key: 'arrivalDate', label: 'تاريخ الوصول للكاميرون' },
+        { key: 'vacationStartDate', label: 'تاريخ بداية الأجازة' },
         { key: 'vacationReturnDate', label: 'تاريخ العودة من الأجازة' },
+        { key: 'travelDate', label: 'تاريخ السفر' },
+        { key: 'airline', label: 'شركة الطيران' },
         { key: 'qualification', label: 'المؤهل' },
         { key: 'qualificationDate', label: 'تاريخ المؤهل' },
         { key: 'grade', label: 'الدرجة الوظيفية' },
@@ -793,6 +798,8 @@ export default function EmployeeList() {
 
                                             if (col.key === 'salary') {
                                                 cellContent = emp.salary ? `$${Number(emp.salary).toLocaleString()}` : '-';
+                                            } else if (col.key === 'allowances') {
+                                                cellContent = emp.allowances ? `$${Number(emp.allowances).toLocaleString()}` : '-';
                                             } else if (col.key === 'maritalStatus') {
                                                 const statusMap = {
                                                     'Single': 'أعزب',
@@ -934,6 +941,10 @@ export default function EmployeeList() {
                                         content = `$ ${emp.salary ? Number(emp.salary).toLocaleString() : '0'}`;
                                     }
 
+                                    if (col.key === 'allowances') {
+                                        content = `$ ${emp.allowances ? Number(emp.allowances).toLocaleString() : '0'}`;
+                                    }
+
                                     if (col.key === 'maritalStatus') {
                                         const statusMap = {
                                             'Single': 'أعزب',
@@ -1000,9 +1011,14 @@ export default function EmployeeList() {
                 onClose={() => setIsImportModalOpen(false)}
                 onSuccess={() => {
                     fetchEmployees();
+                    fetchDepartments();
+                    fetchCostCenters();
+                    fetchBuildings();
                     setIsImportModalOpen(false);
                 }}
                 departments={departments || []}
+                costCenters={costCenters || []}
+                buildings={buildings || []}
             />
         </div >
     );

@@ -16,6 +16,7 @@ export default function EmployeeForm() {
         department: '',
         costCenter: '',
         salary: '',
+        allowances: '',
         dateHired: '',
         fixedNumber: '',
         jobRole: '',
@@ -37,7 +38,8 @@ export default function EmployeeForm() {
         cairoPhone: '',
         cameroonPhone: '',
         address: '',
-        efficiencyReport: ''
+        efficiencyReport: '',
+        birthDate: ''
     });
 
     const [selectedFile, setSelectedFile] = useState(null);
@@ -494,20 +496,32 @@ export default function EmployeeForm() {
                     </div>
                 </div>
 
-                <div className="input-group" style={{ marginBottom: '1rem' }}>
-                    <label className="input-label">الحالة الاجتماعية</label>
-                    <CustomSelect
-                        options={[
-                            { value: 'Single', label: 'أعزب' },
-                            { value: 'Married', label: 'متزوج' },
-                            { value: 'MarriedWithDependents', label: 'متزوج و يعول' },
-                            { value: 'Divorced', label: 'مطلق' },
-                            { value: 'Widowed', label: 'أرمل' }
-                        ]}
-                        value={formData.maritalStatus || 'Single'}
-                        onChange={(val) => setFormData(prev => ({ ...prev, maritalStatus: val }))}
-                        placeholder="اختر الحالة الاجتماعية"
-                    />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="input-group">
+                        <label className="input-label">تاريخ الميلاد</label>
+                        <input
+                            className="input-field"
+                            type="date"
+                            name="birthDate"
+                            value={formData.birthDate || ''}
+                            onChange={handleChange}
+                        />
+                    </div>
+                    <div className="input-group">
+                        <label className="input-label">الحالة الاجتماعية</label>
+                        <CustomSelect
+                            options={[
+                                { value: 'Single', label: 'أعزب' },
+                                { value: 'Married', label: 'متزوج' },
+                                { value: 'MarriedWithDependents', label: 'متزوج و يعول' },
+                                { value: 'Divorced', label: 'مطلق' },
+                                { value: 'Widowed', label: 'أرمل' }
+                            ]}
+                            value={formData.maritalStatus || 'Single'}
+                            onChange={(val) => setFormData(prev => ({ ...prev, maritalStatus: val }))}
+                            placeholder="اختر الحالة الاجتماعية"
+                        />
+                    </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -642,6 +656,24 @@ export default function EmployeeForm() {
                             }}
                         />
                     </div>
+                    <div className="input-group">
+                        <label className="input-label">البدلات</label>
+                        <input
+                            className="input-field"
+                            type="number"
+                            name="allowances"
+                            value={formData.allowances || ''}
+                            onChange={handleChange}
+                            disabled={!formData.isActive}
+                            style={{
+                                background: !formData.isActive ? '#f1f5f9' : 'white',
+                                cursor: !formData.isActive ? 'not-allowed' : 'text'
+                            }}
+                        />
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div className="input-group">
                         <label className="input-label">تاريخ التعيين</label>
                         <input

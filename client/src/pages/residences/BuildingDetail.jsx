@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronRight, Plus, Home, User, Calendar, Trash2, UserPlus, UserMinus, AlertCircle, Edit2 } from 'lucide-react';
+import { ChevronRight, Plus, Home, User, Calendar, Trash2, UserPlus, UserMinus, AlertCircle, Edit2, Users } from 'lucide-react';
 import { API_URL } from '../../utils/api';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import CustomSelect from '../../components/CustomSelect';
@@ -186,6 +186,26 @@ export default function BuildingDetail() {
                     إضافة شقة
                 </button>
             </div>
+
+            {/* Unassigned Employees Section */}
+            {building.unassignedEmployees && building.unassignedEmployees.length > 0 && (
+                <div className="unassigned-section">
+                    <div className="unassigned-header">
+                        <Users size={20} />
+                        <h3>موظفين بدون غرفة ({building.unassignedEmployees.length})</h3>
+                    </div>
+                    <p className="unassigned-description">هؤلاء الموظفين مسجلين في هذه الاستراحة ولكن لم يتم تسكينهم في غرفة بعد</p>
+                    <div className="unassigned-list">
+                        {building.unassignedEmployees.map(emp => (
+                            <div key={emp.id} className="unassigned-employee">
+                                <User size={16} />
+                                <span className="emp-name">{emp.fullName}</span>
+                                {emp.position && <span className="emp-position">({emp.position})</span>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="apartment-grid">
                 {building.apartments?.map(apt => (
@@ -628,6 +648,52 @@ export default function BuildingDetail() {
                     background: #f8fafc;
                     border-radius: 12px;
                     border: 2px dashed #e2e8f0;
+                }
+                .unassigned-section {
+                    background: #fffbeb;
+                    border: 1px solid #fcd34d;
+                    border-radius: 12px;
+                    padding: 1.5rem;
+                    margin-bottom: 2rem;
+                }
+                .unassigned-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    color: #b45309;
+                    margin-bottom: 0.5rem;
+                }
+                .unassigned-header h3 {
+                    margin: 0;
+                    font-size: 1.1rem;
+                }
+                .unassigned-description {
+                    color: #92400e;
+                    font-size: 0.9rem;
+                    margin: 0 0 1rem 0;
+                }
+                .unassigned-list {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 0.75rem;
+                }
+                .unassigned-employee {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    background: white;
+                    padding: 0.5rem 1rem;
+                    border-radius: 8px;
+                    border: 1px solid #fcd34d;
+                    font-size: 0.9rem;
+                }
+                .unassigned-employee .emp-name {
+                    font-weight: 500;
+                    color: #1e293b;
+                }
+                .unassigned-employee .emp-position {
+                    color: #64748b;
+                    font-size: 0.85rem;
                 }
                 .modal-overlay {
                     position: fixed;

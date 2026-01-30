@@ -8,8 +8,26 @@ let serverProcess;
 
 // Basic logging setup (safe to run at top level)
 // Configure Portable Data Path (Must be done before accessing userData)
-if (process.env.PORTABLE_EXECUTABLE_DIR) {
-    // Running as generic Portable App (e.g. from Flash Drive)
+// This makes the app fully portable - data travels with the app folder
+
+function getPortableDataPath() {
+    // When packaged, the app runs from: .../resources/app/electron/main.js
+    // We want to store data next to the .exe (or app bundle), not inside resources
+    if (app.isPackaged) {
+        // Get the directory containing the executable
+        const exeDir = path.dirname(app.getPath('exe'));
+        const portableDataDir = path.join(exeDir, 'gomaadb_data');
+        return portableDataDir;
+    }
+    return null; // Use default userData in development
+}
+
+const portablePath = getPortableDataPath();
+if (portablePath) {
+    // Running as packaged app - use portable data path next to exe
+    app.setPath('userData', portablePath);
+} else if (process.env.PORTABLE_EXECUTABLE_DIR) {
+    // Fallback for generic Portable App environment variable
     app.setPath('userData', path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'gomaadb_data'));
 }
 
