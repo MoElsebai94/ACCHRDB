@@ -901,7 +901,7 @@ export default function EmployeeProfile() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #2980b9', paddingBottom: '5mm', marginBottom: '5mm' }}>
                     <div style={{ textAlign: 'right' }}>
                         <h1 style={{ fontSize: '20px', margin: 0, color: '#2c3e50', fontWeight: 'bold' }}>المقاولون العرب الكاميرونيه</h1>
-                        <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#7f8c8d' }}>إدارة الموارد البشرية</p>
+                        <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#7f8c8d' }}>الموارد البشرية</p>
                     </div>
                     <img src={logo} alt="Logo" style={{ width: '60px', height: 'auto' }} />
                 </div>
@@ -1038,7 +1038,7 @@ export default function EmployeeProfile() {
 
                 {/* Footer */}
                 <div style={{ position: 'absolute', bottom: '10mm', left: '10mm', right: '10mm', textAlign: 'center', fontSize: '10px', color: '#94a3b8', borderTop: '1px solid #e2e8f0', paddingTop: '5mm' }}>
-                    تم استخراج هذا المستند من نظام إدارة الموارد البشرية - المقاولون العرب الكاميرونية
+                    تم استخراج هذا المستند من نظام الموارد البشرية - المقاولون العرب الكاميرونية
                 </div>
             </div>
         </div>

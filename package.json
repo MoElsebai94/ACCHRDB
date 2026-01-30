@@ -1,6 +1,6 @@
 {
   "name": "gomaadb",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "",
   "main": "electron/main.js",
   "scripts": {
@@ -30,13 +30,16 @@
     "win": {
       "target": [
         {
-          "target": "nsis",
+          "target": "portable",
           "arch": [
             "x64"
           ]
         }
       ],
       "icon": "client/public/logo.png"
+    },
+    "portable": {
+      "artifactName": "HR-Database-${version}-Portable.exe"
     },
     "mac": {
       "target": "dmg",

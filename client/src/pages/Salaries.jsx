@@ -482,7 +482,7 @@ export default function Salaries() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5mm' }}>
                         <div style={{ textAlign: 'left' }}>
                             <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'white' }}>Arab Contractors</h2>
-                            <p style={{ margin: '2px 0 0 0', color: '#fbbf24', fontSize: '18px', fontWeight: 'bold' }}>Cameroon</p>
+                            <p style={{ margin: '2px 0 0 0', color: '#fbbf24', fontSize: '18px', fontWeight: 'bold' }}>Cameroun</p>
                         </div>
                         <img src={logo} alt="Logo" style={{ height: '18mm', filter: 'brightness(0) invert(1)' }} />
                     </div>
@@ -551,7 +551,7 @@ export default function Salaries() {
                 {/* Modern Footer (No Signatures) */}
                 <div style={{ marginTop: '5mm', padding: '4mm', borderTop: '2px solid #f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                     <div style={{ color: '#94a3b8', fontSize: '11px', textAlign: 'center' }}>
-                        تم استخراج هذا التقرير آلياً من نظام إدارة الموارد البشرية | {new Date().toLocaleString('ar-EG')}
+                        تم استخراج هذا التقرير آلياً من نظام الموارد البشرية | {new Date().toLocaleString('ar-EG')}
                     </div>
                 </div>
             </div >
@@ -656,7 +656,7 @@ export default function Salaries() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '5mm' }}>
                                 <div style={{ textAlign: 'left' }}>
                                     <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'white' }}>Arab Contractors</h2>
-                                    <p style={{ margin: '2px 0 0 0', color: '#fbbf24', fontSize: '18px', fontWeight: 'bold' }}>Cameroon</p>
+                                    <p style={{ margin: '2px 0 0 0', color: '#fbbf24', fontSize: '18px', fontWeight: 'bold' }}>Cameroun</p>
                                 </div>
                                 <img src={logo} alt="Logo" style={{ height: '18mm', filter: 'brightness(0) invert(1)' }} />
                             </div>

@@ -473,7 +473,7 @@ export default function Residences() {
                             )}
                             <div>
                                 <h1 style={{ fontSize: '26px', fontWeight: '700', margin: '0 0 5px 0', color: '#ffffff', letterSpacing: '0px', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>المقاولون العرب الكاميرونيه</h1>
-                                <h2 style={{ fontSize: '16px', fontWeight: '500', margin: 0, color: '#94a3b8' }}>إدارة الموارد البشرية - شئون الاستراحات</h2>
+                                <h2 style={{ fontSize: '16px', fontWeight: '500', margin: 0, color: '#94a3b8' }}>الموارد البشرية - شئون الاستراحات</h2>
                             </div>
                         </div>
                         <div style={{ textAlign: 'left' }}>
@@ -593,7 +593,7 @@ export default function Residences() {
                         </table>
 
                         <div style={{ marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8' }}>
-                            <div>تم إنشاء هذا التقرير تلقائياً بواسطة نظام إدارة الموارد البشرية</div>
+                            <div>تم إنشاء هذا التقرير تلقائياً بواسطة نظام الموارد البشرية</div>
                             <div>{new Date().toLocaleString('en-GB')}</div>
                         </div>
                     </div>
@@ -668,7 +668,7 @@ export default function Residences() {
 
                     {/* Footer */}
                     <div style={{ marginTop: '20px', fontSize: '10px', color: '#94a3b8', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '10px' }}>
-                        تم استخراج هذا التقرير من نظام إدارة الموارد البشرية | {new Date().toLocaleDateString('ar-EG')}
+                        تم استخراج هذا التقرير من نظام الموارد البشرية | {new Date().toLocaleDateString('ar-EG')}
                     </div>
                 </div>
             )}

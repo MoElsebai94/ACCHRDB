@@ -121,7 +121,7 @@ Employee.hasOne(Room, { as: 'temporaryRoom', foreignKey: 'temporaryResidentId' }
 
 // Employee-Building association (for showing unassigned employees in building view)
 Employee.belongsTo(Building, { as: 'building', foreignKey: 'buildingId' });
-Building.hasMany(Employee, { as: 'employees', foreignKey: 'buildingId' });
+Building.hasMany(Employee, { as: 'employees', foreignKey: 'buildingId', onDelete: 'SET NULL' });
 
 Employee.hasMany(LoanHistory, { as: 'loanHistory', foreignKey: 'employeeId', onDelete: 'CASCADE' });
 LoanHistory.belongsTo(Employee, { foreignKey: 'employeeId' });
@@ -187,7 +187,15 @@ app.put('/api/departments/:id', async (req, res) => {
 
 app.delete('/api/departments/:id', async (req, res) => {
     try {
-        const result = await Department.destroy({ where: { id: req.params.id } });
+        const deptId = req.params.id;
+
+        // First, update any child departments to have no parent
+        await Department.update(
+            { parentId: null },
+            { where: { parentId: deptId } }
+        );
+
+        const result = await Department.destroy({ where: { id: deptId } });
         if (result) res.status(204).send();
         else res.status(404).json({ error: 'Department not found' });
     } catch (error) {
@@ -1160,10 +1168,48 @@ app.delete('/api/residences/rooms/:id', async (req, res) => {
 // Delete building
 app.delete('/api/residences/buildings/:id', async (req, res) => {
     try {
-        const count = await Building.destroy({ where: { id: req.params.id } });
+        const buildingId = req.params.id;
+
+        // Get all apartments and rooms in this building
+        const apartments = await Apartment.findAll({
+            where: { buildingId },
+            include: [{ model: Room, as: 'rooms' }]
+        });
+
+        const roomIds = apartments.flatMap(apt => (apt.rooms || []).map(r => r.id));
+        const apartmentIds = apartments.map(apt => apt.id);
+
+        // Clear room resident assignments
+        if (roomIds.length > 0) {
+            await Room.update(
+                { permanentResidentId: null, temporaryResidentId: null },
+                { where: { id: roomIds } }
+            );
+        }
+
+        // Clear buildingId from employees
+        await Employee.update(
+            { buildingId: null },
+            { where: { buildingId: buildingId } }
+        );
+
+        // Delete rooms first (child of apartments)
+        if (roomIds.length > 0) {
+            await Room.destroy({ where: { id: roomIds } });
+        }
+
+        // Delete apartments (child of building)
+        if (apartmentIds.length > 0) {
+            await Apartment.destroy({ where: { id: apartmentIds } });
+        }
+
+        // Finally delete the building
+        const count = await Building.destroy({ where: { id: buildingId } });
+
         if (count) res.status(204).send();
         else res.status(404).json({ error: 'Building not found' });
     } catch (error) {
+        console.error('Error deleting building:', error);
         res.status(500).json({ error: error.message });
     }
 });
